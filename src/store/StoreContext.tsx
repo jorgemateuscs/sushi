@@ -16,6 +16,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [clientOrders, setClientOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // ─── Auth State (Admin) ───
@@ -82,19 +83,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           extras: []
         })));
 
-        // Fetch Orders
-        const { data: ords } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
-        if (ords) setOrders(ords.map(o => ({
-          ...o,
-          orderNumber: o.id.slice(0,4).toUpperCase(),
-          customer: { name: o.customer_name, phone: o.customer_phone, rua: o.delivery_address, numero: '', bairro: '' },
-          items: o.order_items.map((i: any) => ({ product: { id: i.product_id, name: i.product_name }, quantity: i.quantity, total: i.unit_price * i.quantity, unitPrice: i.unit_price, selectedExtras: [] })),
-          total: o.total_amount,
-          payment: { method: o.payment_method },
-          deliveryFee: DELIVERY_FEE,
-          createdAt: o.created_at,
-          statusHistory: [{ status: o.status, at: o.created_at }]
-        })));
+        // Fetch Orders only if Admin
+        if (profile?.role === 'admin') {
+          const { data: ords } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+          if (ords) setOrders(ords.map(o => ({
+            ...o,
+            orderNumber: o.id.slice(0,4).toUpperCase(),
+            customer: { name: o.customer_name, phone: o.customer_phone, rua: o.delivery_address, numero: '', bairro: '' },
+            items: o.order_items.map((i: any) => ({ product: { id: i.product_id, name: i.product_name }, quantity: i.quantity, total: i.unit_price * i.quantity, unitPrice: i.unit_price, selectedExtras: [] })),
+            total: o.total_amount,
+            payment: { method: o.payment_method },
+            deliveryFee: DELIVERY_FEE,
+            createdAt: o.created_at,
+            statusHistory: [{ status: o.status, at: o.created_at }]
+          })));
+        } else {
+          setOrders([]);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -115,7 +120,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(orderSub);
     };
-  }, []);
+  }, [profile?.role]);
+
+  // ─── Fetch Client History ───
+  const fetchClientHistory = async (phone: string) => {
+    if (!phone) {
+      setClientOrders([]);
+      return;
+    }
+    const { data: ords, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('customer_phone', phone)
+      .order('created_at', { ascending: false });
+
+    if (ords && !error) {
+      setClientOrders(ords.map(o => ({
+        ...o,
+        orderNumber: o.id.slice(0,4).toUpperCase(),
+        customer: { name: o.customer_name, phone: o.customer_phone, rua: o.delivery_address, numero: '', bairro: '' },
+        items: o.order_items.map((i: any) => ({ product: { id: i.product_id, name: i.product_name }, quantity: i.quantity, total: i.unit_price * i.quantity, unitPrice: i.unit_price, selectedExtras: [] })),
+        total: o.total_amount,
+        payment: { method: o.payment_method },
+        deliveryFee: DELIVERY_FEE,
+        createdAt: o.created_at,
+        statusHistory: [{ status: o.status, at: o.created_at }]
+      })));
+    } else {
+      console.error("Erro ao buscar histórico:", error);
+    }
+  };
 
   // ─── Cart Actions ───
   const addToCart = (product: any, quantity: number, selectedExtras: any[]) => {
@@ -260,10 +294,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         categories,
         products,
         orders,
+        clientOrders,
         cart,
         cartNotes,
         activeOrderId,
         DELIVERY_FEE,
+        fetchClientHistory,
         addToCart,
         removeFromCart,
         updateCartQty,

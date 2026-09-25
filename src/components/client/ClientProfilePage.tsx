@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { Package, User, Clock, ShoppingBag, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export default function ClientProfilePage() {
-  const { clientPhone, clientProfile, setClientPhone, orders, formatCurrency, addToCart } = useStore();
+  const { clientPhone, clientProfile, setClientPhone, clientOrders, fetchClientHistory, formatCurrency, addToCart } = useStore();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'andamento' | 'perfil' | 'historico' | 'carrinho'>('andamento');
@@ -25,8 +25,14 @@ export default function ClientProfilePage() {
     address_reference: ''
   });
 
+  useEffect(() => {
+    if (clientPhone) {
+      fetchClientHistory(clientPhone);
+    }
+  }, [clientPhone]);
+
   // User's orders
-  const myOrders = orders.filter((o: any) => o.customer_phone === clientPhone);
+  const myOrders = clientOrders || [];
   const activeOrder = myOrders.find((o: any) => !['delivered', 'cancelled'].includes(o.status));
 
   useEffect(() => {

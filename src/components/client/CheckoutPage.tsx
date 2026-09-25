@@ -47,6 +47,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [changeFor, setChangeFor] = useState('');
   const [pixCopied, setPixCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const subtotal = cart.reduce((sum: number, item: any) => sum + item.total, 0);
   const total = subtotal + DELIVERY_FEE;
@@ -72,7 +73,9 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) return;
+    if (!isFormValid || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     // Sanitize phone (only numbers)
     const sanitizedPhone = customer.phone.replace(/\D/g, '');
@@ -89,6 +92,8 @@ export default function CheckoutPage() {
       navigate('/cliente/perfil', { replace: true });
     } catch (error) {
       // Error already toasted in Context
+    } finally {
+      setTimeout(() => setIsSubmitting(false), 4000);
     }
   };
 
@@ -317,9 +322,9 @@ export default function CheckoutPage() {
           type="submit"
           size="lg"
           className="w-full h-14 text-lg font-bold"
-          disabled={!isFormValid}
+          disabled={!isFormValid || isSubmitting}
         >
-          🚀 Confirmar Pedido — {formatCurrency(total)}
+          {isSubmitting ? 'A processar pedido...' : `🚀 Confirmar Pedido — ${formatCurrency(total)}`}
         </Button>
       </form>
     </div>
