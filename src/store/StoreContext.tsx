@@ -19,6 +19,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [clientOrders, setClientOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  const [adminOrderFilter, setAdminOrderFilter] = useState<{ start: string, end: string }>(() => {
+    const s = new Date(); s.setHours(0,0,0,0);
+    const e = new Date(); e.setHours(23,59,59,999);
+    return { start: s.toISOString(), end: e.toISOString() };
+  });
+  
   // ─── Auth State (Admin) ───
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -85,7 +91,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         // Fetch Orders only if Admin
         if (profile?.role === 'admin') {
-          const { data: ords } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+          const { data: ords } = await supabase.from('orders')
+            .select('*, order_items(*)')
+            .gte('created_at', adminOrderFilter.start)
+            .lte('created_at', adminOrderFilter.end)
+            .order('created_at', { ascending: false });
           if (ords) setOrders(ords.map(o => ({
             ...o,
             orderNumber: o.id.slice(0,4).toUpperCase(),
@@ -120,7 +130,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(orderSub);
     };
-  }, [profile?.role]);
+  }, [profile?.role, adminOrderFilter]);
 
   // ─── Fetch Client History ───
   const fetchClientHistory = async (phone: string) => {
@@ -299,6 +309,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         cartNotes,
         activeOrderId,
         DELIVERY_FEE,
+        adminOrderFilter,
+        setAdminOrderFilter,
         fetchClientHistory,
         addToCart,
         removeFromCart,

@@ -1,11 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { ChevronRight, Phone, MapPin } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronRight, Phone, MapPin, Calendar } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
+import { Input } from '../ui/input';
 
 const STATUS_CONFIG: Record<string, any> = {
   received: { label: '📩 Recebidos', next: 'preparing', nextLabel: 'Preparar', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
@@ -17,7 +18,46 @@ const STATUS_CONFIG: Record<string, any> = {
 const COLUMNS = ['received', 'preparing', 'out_for_delivery', 'delivered'];
 
 export default function OrdersPage() {
-  const { orders, updateOrderStatus, formatCurrency } = useStore();
+  const { orders, updateOrderStatus, formatCurrency, adminOrderFilter, setAdminOrderFilter } = useStore();
+  const [period, setPeriod] = useState<'hoje' | 'ontem' | 'mes' | 'ano' | 'personalizado'>('hoje');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
+  const handlePeriodChange = (newPeriod: 'hoje' | 'ontem' | 'mes' | 'ano' | 'personalizado') => {
+    setPeriod(newPeriod);
+    const now = new Date();
+    let s = new Date(now);
+    let e = new Date(now);
+
+    if (newPeriod === 'hoje') {
+      s.setHours(0,0,0,0);
+      e.setHours(23,59,59,999);
+    } else if (newPeriod === 'ontem') {
+      s.setDate(s.getDate() - 1);
+      s.setHours(0,0,0,0);
+      e.setDate(e.getDate() - 1);
+      e.setHours(23,59,59,999);
+    } else if (newPeriod === 'mes') {
+      s = new Date(now.getFullYear(), now.getMonth(), 1);
+      e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (newPeriod === 'ano') {
+      s = new Date(now.getFullYear(), 0, 1);
+      e = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    }
+
+    if (newPeriod !== 'personalizado') {
+      setAdminOrderFilter({ start: s.toISOString(), end: e.toISOString() });
+    }
+  };
+
+  const applyCustomFilter = () => {
+    if (!customStart || !customEnd) return;
+    const s = new Date(customStart);
+    s.setHours(0,0,0,0);
+    const e = new Date(customEnd);
+    e.setHours(23,59,59,999);
+    setAdminOrderFilter({ start: s.toISOString(), end: e.toISOString() });
+  };
 
 
   const handleAdvance = (orderId: string, nextStatus: string) => {
@@ -41,7 +81,49 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <h1 className="text-3xl font-bold tracking-tight mb-6">📋 Gestão de Pedidos</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">📋 Gestão de Pedidos</h1>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex bg-muted p-1 rounded-lg">
+            {(['hoje', 'ontem', 'mes', 'ano', 'personalizado'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => handlePeriodChange(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md capitalize transition-colors ${period === p ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          {period === 'personalizado' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="w-32 h-8 text-xs"
+              />
+              <span className="text-muted-foreground text-xs">até</span>
+              <Input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="w-32 h-8 text-xs"
+              />
+              <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={applyCustomFilter}>
+                Filtrar
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="mb-4 text-sm text-muted-foreground flex items-center gap-2 bg-muted/30 p-2 rounded-lg w-fit border border-border/50">
+        <Calendar size={14} className="text-primary" />
+        Exibindo pedidos de <strong className="text-foreground">{new Date(adminOrderFilter.start).toLocaleDateString('pt-BR')}</strong> até <strong className="text-foreground">{new Date(adminOrderFilter.end).toLocaleDateString('pt-BR')}</strong>
+      </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 pb-4 items-start">
         {COLUMNS.map((status) => {
