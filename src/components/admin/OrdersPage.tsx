@@ -43,19 +43,19 @@ export default function OrdersPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <h1 className="text-3xl font-bold tracking-tight mb-6">📋 Gestão de Pedidos</h1>
 
-      <div className="flex-1 flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 pb-4 items-start">
         {COLUMNS.map((status) => {
           const config = STATUS_CONFIG[status];
           const columnOrders = orders.filter((o: any) => o.status === status);
 
           return (
-            <div key={status} className="flex-shrink-0 w-80 sm:w-96 flex flex-col snap-start">
+            <div key={status} className="flex flex-col h-full max-h-[75vh] md:max-h-full min-h-0">
               <div className={`px-4 py-3 rounded-t-xl border-t border-l border-r border-border font-bold flex items-center justify-between ${config.color.replace('border-', '')} border`}>
                 <span>{config.label}</span>
                 <Badge variant="secondary" className="bg-background/50 font-bold">{columnOrders.length}</Badge>
               </div>
 
-              <div className="flex-1 bg-muted/30 border border-border rounded-b-xl p-3 overflow-y-auto space-y-3">
+              <div className="flex-1 bg-muted/30 border border-border rounded-b-xl p-2 overflow-y-auto scrollbar-thin space-y-2">
                 {columnOrders.length === 0 && (
                   <p className="text-muted-foreground text-sm text-center py-8">
                     Nenhum pedido
@@ -67,9 +67,9 @@ export default function OrdersPage() {
                     key={order.id}
                     className={`border border-border/50 shadow-sm ${status === 'received' ? 'animate-in fade-in slide-in-from-top-2 duration-300' : ''}`}
                   >
-                    <CardContent className="p-4 space-y-3">
+                    <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-lg text-primary">#{order.orderNumber}</span>
+                        <span className="font-bold text-base text-primary">#{order.orderNumber}</span>
                         <span className="text-xs text-muted-foreground bg-accent px-2 py-1 rounded-md font-medium">
                           {new Date(order.createdAt).toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
