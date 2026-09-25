@@ -16,14 +16,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [clientOrders, setClientOrders] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
   const [adminOrderFilter, setAdminOrderFilter] = useState<{ start: string, end: string }>(() => {
     const s = new Date(); s.setHours(0,0,0,0);
     const e = new Date(); e.setHours(23,59,59,999);
     return { start: s.toISOString(), end: e.toISOString() };
   });
+  const [adminOrderPeriod, setAdminOrderPeriod] = useState<'hoje' | 'mes' | 'ano' | 'personalizado'>('hoje');
+  const [adminCustomStart, setAdminCustomStart] = useState('');
+  const [adminCustomEnd, setAdminCustomEnd] = useState('');
   
   // ─── Auth State (Admin) ───
   const [session, setSession] = useState<any>(null);
@@ -70,8 +70,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [clientPhone]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
+    const fetchData = async (background = false) => {
+      if (!background) setIsLoading(true);
       try {
         // Fetch Categories
         const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
@@ -113,7 +113,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
-        setIsLoading(false);
+        if (!background) setIsLoading(false);
       }
     };
 
@@ -123,7 +123,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const orderSub = supabase.channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
         // Simplistic refetch on any order change
-        fetchData();
+        fetchData(true);
       })
       .subscribe();
 
@@ -311,6 +311,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         DELIVERY_FEE,
         adminOrderFilter,
         setAdminOrderFilter,
+        adminOrderPeriod,
+        setAdminOrderPeriod,
+        adminCustomStart,
+        setAdminCustomStart,
+        adminCustomEnd,
+        setAdminCustomEnd,
         fetchClientHistory,
         addToCart,
         removeFromCart,
