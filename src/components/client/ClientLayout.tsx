@@ -31,11 +31,11 @@ export default function ClientLayout() {
           <div className="flex items-center gap-2 sm:gap-4">
             
             {clientPhone ? (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button variant="ghost" size="sm" asChild>
                   <Link to="/cliente/perfil">
-                    <User className="mr-2 h-4 w-4" />
-                    {clientProfile?.full_name?.split(' ')[0] || 'Perfil'}
+                    <User className="sm:mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">{clientProfile?.full_name?.split(' ')[0] || 'Perfil'}</span>
                   </Link>
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleLogoutClient} className="text-destructive hidden sm:flex">
@@ -44,7 +44,7 @@ export default function ClientLayout() {
                 </Button>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+              <Button variant="ghost" size="sm" asChild>
                 <Link to="/cliente/login">Entrar</Link>
               </Button>
             )}
