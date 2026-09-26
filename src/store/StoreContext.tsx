@@ -16,6 +16,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [clientOrders, setClientOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [adminOrderFilter, setAdminOrderFilter] = useState<{ start: string, end: string }>(() => {
     const s = new Date(); s.setHours(0,0,0,0);
     const e = new Date(); e.setHours(23,59,59,999);
