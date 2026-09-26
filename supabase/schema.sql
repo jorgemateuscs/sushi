@@ -99,7 +99,7 @@ CREATE POLICY "Read Order Items" ON public.order_items FOR SELECT USING (true);
 
 -- 8. Tabela de Configurações da Loja
 CREATE TABLE IF NOT EXISTS public.store_settings (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id TEXT PRIMARY KEY DEFAULT 'default',
   store_name TEXT DEFAULT 'Sushiya',
   phone TEXT,
   whatsapp TEXT,
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
 
 -- Inserir registro padrão único
 INSERT INTO public.store_settings (id, store_name, phone, whatsapp, address, instagram)
-SELECT '00000000-0000-0000-0000-000000000000', 'Sushiya', '(00) 0000-0000', '00000000000', 'Rua Principal, 123 - Centro', '@sushiya'
+SELECT 'default', 'Sushiya', '(00) 0000-0000', '00000000000', 'Rua Principal, 123 - Centro', '@sushiya'
 WHERE NOT EXISTS (SELECT 1 FROM public.store_settings);
 
 -- RLS para store_settings

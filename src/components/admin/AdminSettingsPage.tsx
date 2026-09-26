@@ -72,7 +72,11 @@ export default function AdminSettingsPage() {
 
     const { error } = await supabase
       .from('store_settings')
-      .upsert({ id: '00000000-0000-0000-0000-000000000000', ...form });
+      .upsert({ 
+        id: 'default', 
+        ...form,
+        updated_at: new Date().toISOString()
+      });
 
     if (error) {
       toast.error('Erro ao salvar as configurações', { description: error.message });
