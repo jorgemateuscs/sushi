@@ -83,8 +83,6 @@ export default function CheckoutPage() {
 
     try {
       await createOrder({ ...customer, phone: sanitizedPhone }, payment);
-      localStorage.setItem('sushi_client_phone', sanitizedPhone);
-      setClientPhone(sanitizedPhone); // Update global state
       toast.success('Pedido realizado com sucesso! 🎉');
       navigate('/cliente/perfil', { replace: true });
     } catch (error) {

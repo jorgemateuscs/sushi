@@ -33,8 +33,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
 
   // ─── Client Auth State ───
-  const [clientPhone, setClientPhone] = useState<string | null>(localStorage.getItem('sushi_client_phone'));
-  const [clientProfile, setClientProfile] = useState<any>(null);
+  const [clientPhone, setClientPhone] = useState<string | null>(() => {
+    const saved = localStorage.getItem('mearim_customer_profile');
+    if (saved) {
+      try { return JSON.parse(saved).phone; } catch (e) { return null; }
+    }
+    return localStorage.getItem('sushi_client_phone') || null;
+  });
+  const [clientProfile, setClientProfile] = useState<any>(() => {
+    const saved = localStorage.getItem('mearim_customer_profile');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { return null; }
+    }
+    return null;
+  });
 
   // ─── Fetch Initial Data ───
   useEffect(() => {
@@ -61,13 +73,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (clientPhone) {
-      localStorage.setItem('sushi_client_phone', clientPhone);
-      supabase.from('customers').select('*').eq('phone', clientPhone).single()
+      supabase.from('customers').select('*').eq('phone', clientPhone).maybeSingle()
         .then(({ data }) => {
-          if (data) setClientProfile(data);
+          if (data) {
+            setClientProfile(data);
+            const customerProfileData = {
+              id: data.id,
+              name: data.full_name,
+              phone: data.phone,
+              address: `${data.address_street || ''}, ${data.address_number || ''} - ${data.address_neighborhood || ''}`,
+              full_name: data.full_name,
+              address_street: data.address_street,
+              address_number: data.address_number,
+              address_neighborhood: data.address_neighborhood,
+              address_reference: data.address_reference
+            };
+            localStorage.setItem('mearim_customer_profile', JSON.stringify(customerProfileData));
+          }
         });
     } else {
-      localStorage.removeItem('sushi_client_phone');
+      localStorage.removeItem('mearim_customer_profile');
       setClientProfile(null);
     }
   }, [clientPhone]);
@@ -173,16 +198,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [profile?.role, adminOrderFilter]);
 
   // ─── Fetch Client History ───
-  const fetchClientHistory = async (phone: string) => {
-    if (!phone) {
+  const fetchClientHistory = async (phone: string, profileId?: string) => {
+    if (!phone && !profileId) {
       setClientOrders([]);
       return;
     }
-    const { data: ords, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('customer_phone', phone)
-      .order('created_at', { ascending: false });
+    
+    let query = supabase.from('orders').select('*, order_items(*)');
+    if (profileId && phone) {
+      query = query.or(`customer_id.eq.${profileId},customer_phone.eq.${phone}`);
+    } else if (profileId) {
+      query = query.eq('customer_id', profileId);
+    } else {
+      query = query.eq('customer_phone', phone);
+    }
+    
+    const { data: ords, error } = await query.order('created_at', { ascending: false });
 
     if (ords && !error) {
       setClientOrders(ords.map(o => ({
@@ -222,14 +253,67 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // ─── Orders Actions ───
   const createOrder = async (customer: any, payment: any) => {
     try {
-      const subtotal = cart.reduce((sum, i) => sum + i.total, 0);
+      const subtotal = cart.reduce((sum: any, i: any) => sum + i.total, 0);
       const total = subtotal + DELIVERY_FEE;
 
+      const cleanPhone = (customer.phone || clientPhone || '').replace(/\D/g, '');
+      const fullAddress = `${customer.rua}, ${customer.numero} - ${customer.bairro} ${customer.complemento ? customer.complemento : ''}`;
+
+      // 1. Validação e Upsert por Telefone
+      const { data: existingProfile } = await supabase
+        .from('customers')
+        .select('id, full_name, phone, address_street')
+        .eq('phone', cleanPhone)
+        .maybeSingle();
+
+      let customerId = null;
+
+      if (existingProfile) {
+        customerId = existingProfile.id;
+        // Update existing profile
+        await supabase.from('customers').update({
+          full_name: customer.name,
+          address_street: customer.rua,
+          address_number: customer.numero,
+          address_neighborhood: customer.bairro,
+          address_reference: customer.referencia || ''
+        }).eq('id', customerId);
+      } else {
+        // Create new profile
+        const { data: newProfile, error: createError } = await supabase.from('customers').insert({
+          full_name: customer.name,
+          phone: cleanPhone,
+          address_street: customer.rua,
+          address_number: customer.numero,
+          address_neighborhood: customer.bairro,
+          address_reference: customer.referencia || ''
+        }).select().single();
+
+        if (createError) throw createError;
+        customerId = newProfile?.id;
+      }
+
+      // 2. Persistência de Identificação no Dispositivo
+      const customerProfileData = {
+        id: customerId,
+        name: customer.name,
+        phone: cleanPhone,
+        address: fullAddress,
+        full_name: customer.name,
+        address_street: customer.rua,
+        address_number: customer.numero,
+        address_neighborhood: customer.bairro,
+        address_reference: customer.referencia || ''
+      };
+      localStorage.setItem('mearim_customer_profile', JSON.stringify(customerProfileData));
+      setClientProfile(customerProfileData);
+      setClientPhone(cleanPhone);
+
       const { data: order, error } = await supabase.from('orders').insert({
-        customer_id: clientProfile?.id || null,
+        customer_id: customerId,
         customer_name: customer.name,
-        customer_phone: customer.phone || clientPhone,
-        delivery_address: `${customer.rua}, ${customer.numero} - ${customer.bairro} ${customer.complemento}`,
+        customer_phone: cleanPhone,
+        delivery_address: fullAddress,
         total_amount: total,
         payment_method: payment.method,
         notes: cartNotes,

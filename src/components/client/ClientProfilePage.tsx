@@ -26,10 +26,10 @@ export default function ClientProfilePage() {
   });
 
   useEffect(() => {
-    if (clientPhone) {
-      fetchClientHistory(clientPhone);
+    if (clientPhone || clientProfile?.id) {
+      fetchClientHistory(clientPhone, clientProfile?.id);
     }
-  }, [clientPhone]);
+  }, [clientPhone, clientProfile]);
 
   // User's orders
   const myOrders = clientOrders || [];
