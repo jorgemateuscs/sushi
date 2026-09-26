@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign,
@@ -8,6 +8,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
+import { supabase } from '../../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -22,41 +23,86 @@ import {
 } from '../ui/table';
 
 export default function DashboardPage() {
-  const { orders, formatCurrency } = useStore();
+  const { formatCurrency } = useStore();
 
   const [period, setPeriod] = useState<'hoje' | 'mes' | 'ano' | 'personalizado'>('hoje');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  const filteredOrders = useMemo(() => {
-    const now = new Date();
-    
-    return orders.filter((o: any) => {
-      const orderDate = new Date(o.createdAt);
-      
-      if (period === 'hoje') {
-        return orderDate.toDateString() === now.toDateString();
-      } else if (period === 'mes') {
-        return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-      } else if (period === 'ano') {
-        return orderDate.getFullYear() === now.getFullYear();
-      } else if (period === 'personalizado') {
-        if (!customStart || !customEnd) return true;
-        const s = new Date(customStart);
-        // adjust start to beginning of day
-        s.setHours(0,0,0,0);
-        // Add 1 day to the end of the day or use 23:59:59 (we use local timezone)
-        const e = new Date(customEnd);
-        e.setHours(23, 59, 59, 999);
-        return orderDate >= s && orderDate <= e;
-      }
-      return true;
-    });
-  }, [orders, period, customStart, customEnd]);
+  const [deliveredOrdersList, setDeliveredOrdersList] = useState<any[]>([]);
 
-  // Only consider 'delivered' or 'entregue'
-  const deliveredOrdersList = filteredOrders.filter((o: any) => ['delivered', 'entregue'].includes(o.status));
-  
+  useEffect(() => {
+    let startIso = '';
+    let endIso = '';
+    const now = new Date();
+
+    if (period === 'hoje') {
+      const s = new Date(now); s.setHours(0,0,0,0);
+      const e = new Date(now); e.setHours(23,59,59,999);
+      startIso = s.toISOString();
+      endIso = e.toISOString();
+    } else if (period === 'mes') {
+      const s = new Date(now.getFullYear(), now.getMonth(), 1); s.setHours(0,0,0,0);
+      const e = new Date(now.getFullYear(), now.getMonth() + 1, 0); e.setHours(23,59,59,999);
+      startIso = s.toISOString();
+      endIso = e.toISOString();
+    } else if (period === 'ano') {
+      const s = new Date(now.getFullYear(), 0, 1); s.setHours(0,0,0,0);
+      const e = new Date(now.getFullYear(), 11, 31); e.setHours(23,59,59,999);
+      startIso = s.toISOString();
+      endIso = e.toISOString();
+    } else if (period === 'personalizado') {
+      if (!customStart || !customEnd) return;
+      const s = new Date(customStart); s.setHours(0,0,0,0);
+      const e = new Date(customEnd); e.setHours(23,59,59,999);
+      startIso = s.toISOString();
+      endIso = e.toISOString();
+    }
+
+    const fetchDashboardOrders = async () => {
+      try {
+        const { data } = await supabase.from('orders')
+          .select('*, order_items(*)')
+          .in('status', ['delivered', 'entregue'])
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
+          .order('created_at', { ascending: false });
+
+        if (data) {
+          setDeliveredOrdersList(data.map(o => ({
+            ...o,
+            orderNumber: o.id.slice(0,4).toUpperCase(),
+            customer: { name: o.customer_name, phone: o.customer_phone, rua: o.delivery_address, numero: '', bairro: '' },
+            items: o.order_items.map((i: any) => ({ product: { id: i.product_id, name: i.product_name }, quantity: i.quantity, total: i.unit_price * i.quantity, unitPrice: i.unit_price, selectedExtras: [] })),
+            total: o.total_amount,
+            payment: { method: o.payment_method },
+            createdAt: o.created_at,
+          })));
+        } else {
+          setDeliveredOrdersList([]);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard orders:', err);
+      }
+    };
+
+    if (startIso && endIso) {
+      fetchDashboardOrders();
+    }
+
+    const channel = supabase.channel('dashboard_orders_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+        if (startIso && endIso) {
+          fetchDashboardOrders();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [period, customStart, customEnd]);
+
   const revenue = deliveredOrdersList.reduce((sum: number, o: any) => sum + o.total, 0);
   const deliveredOrdersCount = deliveredOrdersList.length;
   const ticketMedio = deliveredOrdersCount > 0 ? revenue / deliveredOrdersCount : 0;

@@ -53,8 +53,20 @@ export default function AdminLayout() {
     };
   }, []);
   const prevCountRef = React.useRef(orders.length);
+  const isInitialLoad = React.useRef(true);
 
   React.useEffect(() => {
+    if (isLoading) {
+      prevCountRef.current = orders.length;
+      return;
+    }
+
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      prevCountRef.current = orders.length;
+      return;
+    }
+
     if (orders.length > prevCountRef.current) {
       if (soundEnabled) {
         toast('🔔 Novo pedido recebido!', {
@@ -88,7 +100,7 @@ export default function AdminLayout() {
       }
     }
     prevCountRef.current = orders.length;
-  }, [orders.length, soundEnabled]);
+  }, [orders.length, soundEnabled, isLoading]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
