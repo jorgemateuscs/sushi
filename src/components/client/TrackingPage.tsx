@@ -69,6 +69,28 @@ export default function TrackingPage() {
   const whatsappNumber = storeSettings?.whatsapp || STORE_WHATSAPP;
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappMessage}`;
 
+  const handleCancelRequest = (ord: any) => {
+    const link = storeSettings?.supportCancelLink || storeSettings?.whatsapp;
+    if (!link) {
+      alert("Canal de suporte não configurado.");
+      return;
+    }
+    
+    let finalUrl = link;
+    if (!finalUrl.startsWith('http')) {
+      finalUrl = `https://wa.me/55${finalUrl.replace(/\D/g, '')}`;
+    }
+
+    if (finalUrl.includes('wa.me')) {
+      const msg = encodeURIComponent(`Olá, gostaria de solicitar o cancelamento do meu Pedido #${ord.orderNumber || ord.id.slice(0, 4).toUpperCase()}`);
+      finalUrl += (finalUrl.includes('?') ? '&' : '?') + `text=${msg}`;
+    }
+    
+    if (window.confirm("Para cancelar seu pedido com segurança e verificar o status na cozinha, fale com nossa equipe de atendimento. Deseja prosseguir?")) {
+      window.open(finalUrl, '_blank');
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto pb-16">
       <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 font-medium text-sm transition-colors">
@@ -143,12 +165,25 @@ export default function TrackingPage() {
       </Card>
 
       {/* WhatsApp button */}
-      <Button asChild size="lg" className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#1DA851] text-white">
-        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-          <MessageCircle size={22} className="mr-2" />
-          Falar com a loja pelo WhatsApp
-        </a>
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button asChild size="lg" className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#1DA851] text-white">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <MessageCircle size={22} className="mr-2" />
+            Falar com a loja pelo WhatsApp
+          </a>
+        </Button>
+
+        {order.status !== 'delivered' && order.status !== 'cancelled' && (
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="w-full h-14 text-lg text-destructive border-destructive hover:bg-destructive hover:text-white"
+            onClick={() => handleCancelRequest(order)}
+          >
+            Cancelar Pedido
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -113,6 +113,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         logoUrl: data.logo_url,
         bannerUrl: data.banner_url,
         instagram: data.instagram,
+        supportCancelLink: data.support_cancel_link || '',
         socialLinks: data.social_links || []
       });
     }

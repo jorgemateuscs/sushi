@@ -21,6 +21,7 @@ export default function AdminSettingsPage() {
     logo_url: '',
     banner_url: '',
     instagram: '',
+    support_cancel_link: '',
     social_links: [] as { label: string, url: string }[]
   });
 
@@ -42,6 +43,7 @@ export default function AdminSettingsPage() {
           logo_url: data.logo_url || '',
           banner_url: data.banner_url || '',
           instagram: data.instagram || '',
+          support_cancel_link: data.support_cancel_link || '',
           social_links: Array.isArray(data.social_links) ? data.social_links : [],
         });
       }
@@ -77,11 +79,20 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     setLoading(true);
 
+    let finalSupportLink = form.support_cancel_link;
+    if (finalSupportLink) {
+      const justNumbers = finalSupportLink.replace(/\D/g, '');
+      if (!finalSupportLink.startsWith('http') && justNumbers.length >= 10) {
+        finalSupportLink = `https://wa.me/55${justNumbers}`;
+      }
+    }
+
     const { error } = await supabase
       .from('store_settings')
       .upsert({ 
         id: 'default', 
         ...form,
+        support_cancel_link: finalSupportLink,
         updated_at: new Date().toISOString()
       });
 
@@ -182,6 +193,12 @@ export default function AdminSettingsPage() {
             <div className="space-y-2">
               <Label htmlFor="instagram">Instagram</Label>
               <Input id="instagram" name="instagram" value={form.instagram} onChange={handleChange} placeholder="@seuinstagram" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="support_cancel_link">Link ou WhatsApp para Cancelamento de Pedidos</Label>
+              <Input id="support_cancel_link" name="support_cancel_link" value={form.support_cancel_link} onChange={handleChange} placeholder="https://... ou 99999999999" />
+              <p className="text-xs text-muted-foreground">O cliente será redirecionado para este link se pedir para cancelar.</p>
             </div>
 
             <div>

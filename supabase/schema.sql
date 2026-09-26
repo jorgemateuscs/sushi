@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
   logo_url TEXT,
   banner_url TEXT,
   instagram TEXT,
+  support_cancel_link TEXT,
   social_links JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );

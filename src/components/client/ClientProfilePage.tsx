@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { Package, User, Clock, ShoppingBag, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export default function ClientProfilePage() {
-  const { clientPhone, clientProfile, setClientPhone, setClientProfile, clientOrders, fetchClientHistory, formatCurrency, addToCart } = useStore();
+  const { clientPhone, clientProfile, setClientPhone, setClientProfile, clientOrders, fetchClientHistory, formatCurrency, addToCart, storeSettings } = useStore();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'andamento' | 'perfil' | 'historico' | 'carrinho'>('andamento');
@@ -183,6 +183,28 @@ export default function ClientProfilePage() {
     navigate('/checkout');
   };
 
+  const handleCancelRequest = (order: any) => {
+    const link = storeSettings?.supportCancelLink || storeSettings?.whatsapp;
+    if (!link) {
+      toast.error("Canal de suporte não configurado.");
+      return;
+    }
+    
+    let finalUrl = link;
+    if (!finalUrl.startsWith('http')) {
+      finalUrl = `https://wa.me/55${finalUrl.replace(/\D/g, '')}`;
+    }
+
+    if (finalUrl.includes('wa.me')) {
+      const msg = encodeURIComponent(`Olá, gostaria de solicitar o cancelamento do meu Pedido #${order.orderNumber || order.id.slice(0, 4).toUpperCase()}`);
+      finalUrl += (finalUrl.includes('?') ? '&' : '?') + `text=${msg}`;
+    }
+    
+    if (window.confirm("Para cancelar seu pedido com segurança e verificar o status na cozinha, fale com nossa equipe de atendimento. Deseja prosseguir?")) {
+      window.open(finalUrl, '_blank');
+    }
+  };
+
   const getStatusProgress = (status: string) => {
     switch (status) {
       case 'received': return 25;
@@ -274,10 +296,17 @@ export default function ClientProfilePage() {
                             </li>
                           ))}
                         </ul>
-                        <div className="flex justify-between font-bold border-t border-border pt-4 text-base">
+                        <div className="flex justify-between font-bold border-t border-border pt-4 text-base mb-4">
                           <span>Total</span>
                           <span className="text-primary">{formatCurrency(activeOrder.total)}</span>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          className="w-full text-destructive border-destructive hover:bg-destructive hover:text-white"
+                          onClick={() => handleCancelRequest(activeOrder)}
+                        >
+                          Cancelar Pedido
+                        </Button>
                       </div>
                     </div>
                   ))}
