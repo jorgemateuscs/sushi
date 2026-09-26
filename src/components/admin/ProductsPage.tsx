@@ -257,6 +257,7 @@ export default function ProductsPage() {
     products,
     categories,
     formatCurrency,
+    addCategory,
     addProduct,
     updateProduct,
     deleteProduct,

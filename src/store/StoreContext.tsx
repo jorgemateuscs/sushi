@@ -273,20 +273,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
   // ─── Categories ───
   const addCategory = async (category: any) => {
-    const { data, error } = await supabase.from('categories').insert([{
-      name: category.name,
-      slug: category.slug,
-      sort_order: category.sort_order
-    }]).select().single();
-    
-    if (error) {
-      toast.error('Erro ao criar categoria', { description: error.message });
-      return;
-    }
-    
-    if (data) {
-      setCategories(prev => [...prev, data].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
-      toast.success('Categoria criada!');
+    try {
+      const { data, error } = await supabase.from('categories').insert([{
+        name: category.name,
+        slug: category.slug,
+        sort_order: category.sort_order || 0
+      }]).select().single();
+      
+      if (error) {
+        console.error('Erro retornado do Supabase:', error);
+        toast.error(error.message || 'Erro ao criar categoria');
+        return;
+      }
+      
+      if (data) {
+        setCategories(prev => [...prev, data].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
+        toast.success('Categoria criada com sucesso!');
+      }
+    } catch (err: any) {
+      console.error('Falha na submissão:', err);
+      toast.error(err.message || 'Erro inesperado');
     }
   };
 
