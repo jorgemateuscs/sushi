@@ -27,7 +27,31 @@ const navItems = [
 export default function AdminLayout() {
   const { session, profile, isLoading, orders } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('admin_sound_enabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  React.useEffect(() => {
+    const unlockAudio = () => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ctx.resume().then(() => {
+          document.removeEventListener('click', unlockAudio);
+          document.removeEventListener('touchstart', unlockAudio);
+          document.removeEventListener('keydown', unlockAudio);
+        });
+      } catch (e) {}
+    };
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
   const prevCountRef = React.useRef(orders.length);
 
   React.useEffect(() => {
@@ -168,8 +192,23 @@ export default function AdminLayout() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                setSoundEnabled(!soundEnabled);
-                if (!soundEnabled) toast.success("Notificações sonoras ativadas!");
+                const newValue = !soundEnabled;
+                setSoundEnabled(newValue);
+                localStorage.setItem('admin_sound_enabled', JSON.stringify(newValue));
+                if (newValue) {
+                  toast.success("Notificações sonoras ativadas!");
+                  try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 800;
+                    gain.gain.value = 0.1;
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                  } catch (e) {}
+                }
               }}
               className={soundEnabled ? "text-primary" : "text-muted-foreground"}
               title="Ativar/Desativar som de novo pedido"
