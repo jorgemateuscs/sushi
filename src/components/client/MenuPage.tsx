@@ -199,11 +199,18 @@ export default function MenuPage() {
   return (
     <div className="pb-16">
       {/* Hero */}
-      <section className="bg-card border border-border rounded-xl p-8 mb-8 text-center shadow-sm">
-        <h1 className="text-3xl font-bold mb-3">🍣 Sushiya Delivery</h1>
-        <p className="text-muted-foreground max-w-lg mx-auto">
-          Sushi artesanal feito com ingredientes frescos. Peça agora e receba no conforto da sua casa!
-        </p>
+      <section className="bg-card border border-border rounded-xl p-8 mb-8 text-center shadow-sm relative overflow-hidden">
+        {storeSettings?.bannerUrl && (
+          <div className="absolute inset-0 z-0 opacity-20">
+            <img src={storeSettings.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold mb-3">{storeSettings?.name || 'Sushiya Delivery'}</h1>
+          <p className="text-muted-foreground max-w-lg mx-auto">
+            {storeSettings?.address || 'Sushi artesanal feito com ingredientes frescos. Peça agora e receba no conforto da sua casa!'}
+          </p>
+        </div>
       </section>
 
       {/* Category Navigation */}

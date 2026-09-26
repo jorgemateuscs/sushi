@@ -17,6 +17,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [clientOrders, setClientOrders] = useState<any[]>([]);
+  const [storeSettings, setStoreSettings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isFirstLoad = React.useRef(true);
   const [adminOrderFilter, setAdminOrderFilter] = useState<{ start: string, end: string }>(() => {
@@ -116,6 +117,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           prepTime: 15,
           extras: []
         })));
+
+        // Fetch Store Settings
+        const { data: settings } = await supabase.from('store_settings').select('*').single();
+        if (settings) {
+          setStoreSettings({
+            name: settings.store_name || 'Sushiya',
+            phone: settings.phone,
+            whatsapp: settings.whatsapp,
+            address: settings.address,
+            logoUrl: settings.logo_url,
+            bannerUrl: settings.banner_url,
+            instagram: settings.instagram,
+            socialLinks: settings.social_links || []
+          });
+        }
 
         // Fetch Orders only if Admin
         if (profile?.role === 'admin') {
@@ -437,6 +453,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         clientPhone,
         setClientPhone,
         clientProfile,
+        storeSettings,
+        setStoreSettings,
         isLoading,
         categories,
         products,

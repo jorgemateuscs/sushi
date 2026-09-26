@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
 
 export default function ClientLayout() {
-  const { cart, session, profile, clientPhone, clientProfile, setClientPhone } = useStore();
+  const { cart, session, profile, clientPhone, clientProfile, setClientPhone, storeSettings } = useStore();
   const [cartOpen, setCartOpen] = useState(false);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -25,8 +25,12 @@ export default function ClientLayout() {
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-background/80 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight transition-colors hover:text-primary">
-            <span className="text-2xl">🍣</span>
-            <span>Sushiya</span>
+            {storeSettings?.logoUrl ? (
+              <img src={storeSettings.logoUrl} alt={storeSettings.name} className="h-8 w-8 object-contain" />
+            ) : (
+              <span className="text-2xl">🍣</span>
+            )}
+            <span>{storeSettings?.name || 'Sushiya'}</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
             

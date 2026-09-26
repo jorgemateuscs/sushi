@@ -34,7 +34,7 @@ const STEPS = ['received', 'preparing', 'delivering', 'delivered'];
 
 export default function TrackingPage() {
   const { orderId } = useParams();
-  const { orders, activeOrderId, formatCurrency } = useStore();
+  const { orders, activeOrderId, formatCurrency, storeSettings } = useStore();
 
   const trackId = orderId || activeOrderId;
   const order = orders.find((o: any) => o.id === trackId);
@@ -64,9 +64,10 @@ export default function TrackingPage() {
   };
 
   const whatsappMessage = encodeURIComponent(
-    `Olá ${STORE_NAME}! 🍣\n\nGostaria de informações sobre meu pedido #${order.orderNumber}.\n\nNome: ${order.customer.name}\nTelefone: ${order.customer.phone}\nTotal: ${formatCurrency(order.total)}`
+    `Olá ${storeSettings?.name || STORE_NAME}! 🍣\n\nGostaria de informações sobre meu pedido #${order.orderNumber}.\n\nNome: ${order.customer.name}\nTelefone: ${order.customer.phone}\nTotal: ${formatCurrency(order.total)}`
   );
-  const whatsappUrl = `https://wa.me/${STORE_WHATSAPP}?text=${whatsappMessage}`;
+  const whatsappNumber = storeSettings?.whatsapp || STORE_WHATSAPP;
+  const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappMessage}`;
 
   return (
     <div className="max-w-2xl mx-auto pb-16">

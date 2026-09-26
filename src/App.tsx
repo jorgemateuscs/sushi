@@ -17,6 +17,7 @@ import LoginPage from './components/admin/LoginPage';
 import DashboardPage from './components/admin/DashboardPage';
 import OrdersPage from './components/admin/OrdersPage';
 import ProductsPage from './components/admin/ProductsPage';
+import AdminSettingsPage from './components/admin/AdminSettingsPage';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="products" element={<ProductsPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

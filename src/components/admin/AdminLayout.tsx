@@ -10,7 +10,8 @@ import {
   X,
   LogOut,
   Bell,
-  BellOff
+  BellOff,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -22,6 +23,7 @@ const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/admin/orders', label: 'Pedidos', icon: ClipboardList },
   { path: '/admin/products', label: 'Produtos', icon: Package },
+  { path: '/admin/settings', label: 'Configurações', icon: SettingsIcon },
 ];
 
 export default function AdminLayout() {
@@ -97,7 +99,7 @@ export default function AdminLayout() {
           <div className="flex flex-col">
             <Link to="/admin" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
               <span className="text-xl">🍣</span>
-              <span>Sushiya</span>
+              <span>{useStore().storeSettings?.name || 'Sushiya'}</span>
             </Link>
             <span className="text-xs text-muted-foreground">Painel Administrativo</span>
           </div>
