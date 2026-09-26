@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../../store/StoreContext';
 import { supabase } from '../../lib/supabase';
+import { isValidBrazilianPhone, isValidName } from '../../lib/validators';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -95,10 +96,15 @@ export default function ClientProfilePage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isValidBrazilianPhone(loginPhone)) {
+      toast.error('Número de telefone inválido. Verifique o DDD e os dígitos.');
+      return;
+    }
+
     const cleanPhone = loginPhone.replace(/\D/g, '');
-    if (cleanPhone.length >= 10) {
-      setIsLoggingIn(true);
-      const { data } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+    setIsLoggingIn(true);
+    const { data } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
       if (data) {
         const customerProfileData = {
           id: data.id,
@@ -117,9 +123,6 @@ export default function ClientProfilePage() {
       setClientPhone(cleanPhone);
       toast.success('Acesso recuperado com sucesso!');
       setIsLoggingIn(false);
-    } else {
-      toast.error('Por favor, digite um número de telefone válido (com DDD).');
-    }
   };
 
   if (!clientPhone) {
@@ -159,6 +162,22 @@ export default function ClientProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isValidName(form.full_name)) {
+      toast.error('Por favor, informe seu nome e sobrenome completo.');
+      return;
+    }
+
+    if (!isValidBrazilianPhone(form.phone)) {
+      toast.error('Número de telefone/WhatsApp inválido.');
+      return;
+    }
+
+    if (!form.address_street.trim() || !form.address_number.trim()) {
+      toast.error('Rua e número são obrigatórios para a entrega.');
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.from('customers').update(form).eq('phone', clientPhone);
     if (error) {

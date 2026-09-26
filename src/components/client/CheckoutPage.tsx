@@ -4,6 +4,7 @@ import { ArrowLeft, User, MapPin, CreditCard, Copy, Check } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
 import { supabase } from '../../lib/supabase';
 import { STORE_PIX_KEY } from '../../data/seed';
+import { isValidBrazilianPhone, isValidName } from '../../lib/validators';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -111,10 +112,34 @@ export default function CheckoutPage() {
     });
   };
 
+  const [submitHistory, setSubmitHistory] = useState<{time: number, phone: string}[]>([]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || isSubmitting) return;
 
+    if (!isValidBrazilianPhone(customer.phone)) {
+      toast.error('Número de telefone inválido. Verifique o DDD e os dígitos.');
+      return;
+    }
+
+    if (!isValidName(customer.name)) {
+      toast.error('Por favor, informe seu nome completo (nome e sobrenome).');
+      return;
+    }
+
+    // Rate Limiting (Prevenção de Abuso Local)
+    const now = Date.now();
+    const tenMinsAgo = now - 10 * 60 * 1000;
+    const recentSubmits = submitHistory.filter(s => s.time > tenMinsAgo);
+    
+    const uniquePhones = new Set(recentSubmits.map(s => s.phone)).size;
+    if (uniquePhones >= 3 && !recentSubmits.some(s => s.phone === customer.phone)) {
+      toast.error('Bloqueio de segurança: Foram detetados demasiados números diferentes. Aguarde 10 minutos.');
+      return;
+    }
+    
+    setSubmitHistory([...recentSubmits, { time: now, phone: customer.phone }]);
     setIsSubmitting(true);
 
     // Sanitize phone (only numbers)
