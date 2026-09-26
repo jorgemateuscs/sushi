@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, User, MapPin, CreditCard, Copy, Check } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
+import { supabase } from '../../lib/supabase';
 import { STORE_PIX_KEY } from '../../data/seed';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 
 export default function CheckoutPage() {
-  const { cart, cartNotes, formatCurrency, DELIVERY_FEE, createOrder, clientPhone, clientProfile, setClientPhone } = useStore();
+  const { cart, cartNotes, formatCurrency, DELIVERY_FEE, createOrder, clientPhone, clientProfile, setClientPhone, setClientProfile } = useStore();
   const navigate = useNavigate();
 
   const [customer, setCustomer] = useState({
@@ -44,6 +45,49 @@ export default function CheckoutPage() {
   const [changeFor, setChangeFor] = useState('');
   const [pixCopied, setPixCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSearchingPhone, setIsSearchingPhone] = useState(false);
+
+  const handlePhoneBlur = async () => {
+    const cleanPhone = customer.phone.replace(/\D/g, '');
+    if (cleanPhone.length >= 10) {
+      setIsSearchingPhone(true);
+      const { data } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .maybeSingle();
+      
+      if (data) {
+        setCustomer(prev => ({
+          ...prev,
+          name: data.full_name || prev.name,
+          bairro: data.address_neighborhood || prev.bairro,
+          rua: data.address_street || prev.rua,
+          numero: data.address_number || prev.numero,
+          referencia: data.address_reference || prev.referencia,
+        }));
+        
+        toast.success(`Bem-vindo de volta, ${data.full_name?.split(' ')[0] || 'Cliente'}!`);
+        
+        const customerProfileData = {
+          id: data.id,
+          name: data.full_name,
+          phone: data.phone,
+          address: `${data.address_street || ''}, ${data.address_number || ''} - ${data.address_neighborhood || ''}`,
+          full_name: data.full_name,
+          address_street: data.address_street,
+          address_number: data.address_number,
+          address_neighborhood: data.address_neighborhood,
+          address_reference: data.address_reference
+        };
+        localStorage.setItem('mearim_customer_profile', JSON.stringify(customerProfileData));
+        
+        if (setClientProfile) setClientProfile(customerProfileData);
+        if (setClientPhone) setClientPhone(data.phone);
+      }
+      setIsSearchingPhone(false);
+    }
+  };
 
   const subtotal = cart.reduce((sum: number, item: any) => sum + item.total, 0);
   const total = subtotal + DELIVERY_FEE;
@@ -132,6 +176,8 @@ export default function CheckoutPage() {
                 placeholder="(00) 00000-0000"
                 value={customer.phone}
                 onChange={handleChange('phone')}
+                onBlur={handlePhoneBlur}
+                disabled={isSearchingPhone}
                 required
               />
             </div>

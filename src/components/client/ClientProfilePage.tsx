@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { Package, User, Clock, ShoppingBag, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export default function ClientProfilePage() {
-  const { clientPhone, clientProfile, setClientPhone, clientOrders, fetchClientHistory, formatCurrency, addToCart } = useStore();
+  const { clientPhone, clientProfile, setClientPhone, setClientProfile, clientOrders, fetchClientHistory, formatCurrency, addToCart } = useStore();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'andamento' | 'perfil' | 'historico' | 'carrinho'>('andamento');
@@ -89,8 +89,71 @@ export default function ClientProfilePage() {
     }
   }, [activeOrder?.status]);
 
+  const [loginPhone, setLoginPhone] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = loginPhone.replace(/\D/g, '');
+    if (cleanPhone.length >= 10) {
+      setIsLoggingIn(true);
+      const { data } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+      if (data) {
+        const customerProfileData = {
+          id: data.id,
+          name: data.full_name,
+          phone: data.phone,
+          address: `${data.address_street || ''}, ${data.address_number || ''} - ${data.address_neighborhood || ''}`,
+          full_name: data.full_name,
+          address_street: data.address_street,
+          address_number: data.address_number,
+          address_neighborhood: data.address_neighborhood,
+          address_reference: data.address_reference
+        };
+        localStorage.setItem('mearim_customer_profile', JSON.stringify(customerProfileData));
+        if (setClientProfile) setClientProfile(customerProfileData);
+      }
+      setClientPhone(cleanPhone);
+      toast.success('Acesso recuperado com sucesso!');
+      setIsLoggingIn(false);
+    } else {
+      toast.error('Por favor, digite um número de telefone válido (com DDD).');
+    }
+  };
+
   if (!clientPhone) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="container mx-auto p-4 py-16 max-w-md">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Acessar Conta</CardTitle>
+            <CardDescription className="text-center">Digite seu WhatsApp para acessar seu histórico de pedidos e seu perfil.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loginPhone">Telefone / WhatsApp</Label>
+                <Input
+                  id="loginPhone"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
+                  disabled={isLoggingIn}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                {isLoggingIn ? 'Buscando...' : 'Ver meus pedidos'}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/')}>
+                Voltar ao Cardápio
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
