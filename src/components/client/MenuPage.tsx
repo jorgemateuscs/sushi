@@ -191,9 +191,22 @@ export default function MenuPage() {
     }
   };
 
-  const sortedCategories = [...categories].sort((a, b) => (a.sort_order || a.order) - (b.sort_order || b.order));
+  const uncategorizedProducts = products.filter((p: any) => (!p.categoryId || p.categoryId === 'none') && p.available);
+  
+  const sortedCategories = [...categories].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  if (uncategorizedProducts.length > 0) {
+    sortedCategories.push({
+      id: 'uncategorized',
+      name: 'Outros',
+      icon: '🍽️',
+      sort_order: 9999
+    });
+  }
+
   const activeCategories = sortedCategories.filter(cat => 
-    products.some((p: any) => p.categoryId === cat.id && p.available)
+    cat.id === 'uncategorized'
+      ? uncategorizedProducts.length > 0
+      : products.some((p: any) => p.categoryId === cat.id && p.available)
   );
 
   return (
@@ -238,7 +251,10 @@ export default function MenuPage() {
       {/* Products by Category */}
       <div className="space-y-12">
         {activeCategories.map((cat) => {
-          const catProducts = products.filter((p: any) => p.categoryId === cat.id && p.available);
+          const catProducts = cat.id === 'uncategorized'
+            ? uncategorizedProducts
+            : products.filter((p: any) => p.categoryId === cat.id && p.available);
+            
           if (catProducts.length === 0) return null;
           return (
             <section

@@ -413,12 +413,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateCategory = async (id: string, updates: any) => {
+    try {
+      const { error } = await supabase.from('categories').update(updates).eq('id', id);
+      if (error) throw error;
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+      toast.success('Categoria atualizada!');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar categoria');
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      // Define category_id como null para produtos vinculados
+      await supabase.from('products').update({ category_id: null }).eq('category_id', id);
+      // Remove a categoria
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+      setCategories(prev => prev.filter(c => c.id !== id));
+      setProducts(prev => prev.map(p => p.categoryId === id ? { ...p, categoryId: null } : p));
+      toast.success('Categoria excluída!');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir categoria');
+    }
+  };
+
   // ─── Products ───
   const addProduct = async (product: any) => {
+    const catId = product.categoryId === 'none' ? null : product.categoryId;
     await supabase.from('products').insert({
       name: product.name,
       description: product.description,
-      category_id: product.categoryId,
+      category_id: catId,
       price: product.price,
       image_url: product.image,
       is_available: product.available
@@ -429,15 +456,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProduct = async (product: any) => {
+    const catId = product.categoryId === 'none' ? null : product.categoryId;
     await supabase.from('products').update({
       name: product.name,
       description: product.description,
-      category_id: product.categoryId,
+      category_id: catId,
       price: product.price,
       image_url: product.image,
       is_available: product.available
     }).eq('id', product.id);
-    setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...product, categoryId: catId } : p));
   };
 
   const deleteProduct = async (id: string) => {
@@ -492,6 +520,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         createOrder,
         updateOrderStatus,
         addCategory,
+        updateCategory,
+        deleteCategory,
         addProduct,
         updateProduct,
         deleteProduct,

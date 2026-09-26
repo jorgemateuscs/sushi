@@ -32,7 +32,7 @@ function ProductFormModal({ product, onClose, onSave }: any) {
     product || {
       name: '',
       description: '',
-      categoryId: categories[0]?.id || '',
+      categoryId: categories[0]?.id || 'none',
       price: '',
       image: '',
       prepTime: '',
@@ -50,7 +50,7 @@ function ProductFormModal({ product, onClose, onSave }: any) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.price || !form.categoryId) return;
+    if (!form.name || !form.price) return;
     onSave({
       ...form,
       price: parseFloat(form.price),
@@ -93,12 +93,13 @@ function ProductFormModal({ product, onClose, onSave }: any) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Categoria *</Label>
-              <Select value={form.categoryId} onValueChange={handleCategoryChange} required>
+              <Label>Categoria</Label>
+              <Select value={form.categoryId || 'none'} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Nenhuma / Sem Categoria</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.icon} {cat.name}
@@ -169,83 +170,100 @@ function ProductFormModal({ product, onClose, onSave }: any) {
   );
 }
 
-// ── Category Form Modal ──
-function CategoryFormModal({ onClose, onSave }: any) {
-  const [form, setForm] = useState({
-    name: '',
-    slug: '',
-    sort_order: 0,
-  });
+// ── Category Management Modal ──
+function CategoryManagerModal({ onClose }: any) {
+  const { categories, addCategory, updateCategory, deleteCategory } = useStore();
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState('');
 
-  const handleChange = (field: string) => (e: any) => {
-    const val = e.target.value;
-    if (field === 'name') {
-      setForm((prev) => ({ ...prev, name: val, slug: val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') }));
-    } else {
-      setForm((prev) => ({ ...prev, [field]: val }));
-    }
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName) return;
+    addCategory({
+      name: newCatName,
+      slug: newCatName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      sort_order: categories.length + 1
+    });
+    setNewCatName('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.slug) return;
-    onSave({
-      ...form,
-      sort_order: parseInt(form.sort_order as any) || 0,
+  const startEdit = (cat: any) => {
+    setEditingCatId(cat.id);
+    setEditCatName(cat.name);
+  };
+
+  const saveEdit = (id: string) => {
+    if (!editCatName) return;
+    updateCategory(id, { 
+      name: editCatName, 
+      slug: editCatName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') 
     });
+    setEditingCatId(null);
+  };
+
+  const removeCategory = (id: string, name: string) => {
+    if (window.confirm(`Excluir a categoria "${name}"? Os produtos vinculados ficarão sem categoria.`)) {
+      deleteCategory(id);
+    }
   };
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Nova Categoria</DialogTitle>
+          <DialogTitle>Gerenciar Categorias</DialogTitle>
           <DialogDescription>
-            Adicione uma nova categoria para agrupar os produtos.
+            Adicione, renomeie ou remova categorias do cardápio.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="catName">Nome *</Label>
+        <div className="space-y-4 py-4">
+          <form onSubmit={handleAdd} className="flex gap-2">
             <Input
-              id="catName"
-              placeholder="Ex: Sobremesas"
-              value={form.name}
-              onChange={handleChange('name')}
+              placeholder="Nova categoria (ex: Sobremesas)"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
               required
             />
-          </div>
+            <Button type="submit">Adicionar</Button>
+          </form>
 
-          <div className="space-y-2">
-            <Label htmlFor="catSlug">Slug (Automático) *</Label>
-            <Input
-              id="catSlug"
-              placeholder="ex: sobremesas"
-              value={form.slug}
-              onChange={handleChange('slug')}
-              required
-            />
+          <div className="border border-border rounded-md divide-y max-h-[300px] overflow-y-auto">
+            {categories.map((cat: any) => (
+              <div key={cat.id} className="flex items-center justify-between p-3">
+                {editingCatId === cat.id ? (
+                  <div className="flex gap-2 flex-1 mr-2">
+                    <Input
+                      value={editCatName}
+                      onChange={(e) => setEditCatName(e.target.value)}
+                      autoFocus
+                    />
+                    <Button size="sm" onClick={() => saveEdit(cat.id)}>Salvar</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingCatId(null)}>Cancelar</Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-medium">{cat.name}</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(cat)}>
+                        <Edit3 size={16} />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-red-500" onClick={() => removeCategory(cat.id, cat.name)}>
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+            {categories.length === 0 && (
+              <div className="p-4 text-center text-muted-foreground text-sm">
+                Nenhuma categoria cadastrada.
+              </div>
+            )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="catOrder">Ordem de Exibição</Label>
-            <Input
-              id="catOrder"
-              type="number"
-              placeholder="Ex: 8"
-              value={form.sort_order}
-              onChange={handleChange('sort_order')}
-            />
-          </div>
-
-          <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">Salvar</Button>
-          </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -278,6 +296,7 @@ export default function ProductsPage() {
   });
 
   const getCategoryName = (catId: string) => {
+    if (!catId || catId === 'none') return 'Sem Categoria';
     const cat = categories.find((c: any) => c.id === catId);
     return cat ? `${cat.icon || ''} ${cat.name}` : catId;
   };
@@ -293,10 +312,7 @@ export default function ProductsPage() {
     setFormModal(null);
   };
 
-  const handleSaveCategory = (categoryData: any) => {
-    addCategory(categoryData);
-    setCategoryModal(false);
-  };
+
 
   const handleDelete = (id: string, name: string) => {
     if (window.confirm(`Excluir "${name}"?`)) {
@@ -340,7 +356,7 @@ export default function ProductsPage() {
         <div className="flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setCategoryModal(true)} variant="outline" className="flex-1 sm:flex-none">
             <Plus size={16} className="mr-2" />
-            Nova Categoria
+            Gerenciar Categorias
           </Button>
           <Button onClick={() => setFormModal({})} className="flex-1 sm:flex-none">
             <Plus size={16} className="mr-2" />
@@ -448,9 +464,8 @@ export default function ProductsPage() {
 
       {/* Category Modal */}
       {categoryModal && (
-        <CategoryFormModal
+        <CategoryManagerModal
           onClose={() => setCategoryModal(false)}
-          onSave={handleSaveCategory}
         />
       )}
     </div>
