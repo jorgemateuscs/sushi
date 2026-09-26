@@ -33,7 +33,7 @@ export default function ClientProfilePage() {
 
   // User's orders
   const myOrders = clientOrders || [];
-  const activeOrder = myOrders.find((o: any) => !['delivered', 'cancelled'].includes(o.status));
+  const activeOrders = myOrders.filter((o: any) => !['delivered', 'cancelled'].includes(o.status));
 
   useEffect(() => {
     if (clientProfile) {
@@ -47,11 +47,12 @@ export default function ClientProfilePage() {
     }
   }, [clientProfile]);
 
-  const prevStatusRef = React.useRef(activeOrder?.status);
+  const prevStatusesRef = React.useRef<Record<string, string>>({});
 
   useEffect(() => {
-    if (activeOrder && activeOrder.status !== prevStatusRef.current) {
-      if (activeOrder.status === 'out_for_delivery') {
+    activeOrders.forEach((order: any) => {
+      const prevStatus = prevStatusesRef.current[order.id];
+      if (prevStatus && order.status !== prevStatus && order.status === 'out_for_delivery') {
         toast('🛵 Seu pedido saiu para entrega!', {
           description: 'O motoboy está a caminho do seu endereço.',
           duration: 8000,
@@ -85,9 +86,9 @@ export default function ClientProfilePage() {
           // Ignora se não puder tocar
         }
       }
-      prevStatusRef.current = activeOrder.status;
-    }
-  }, [activeOrder?.status]);
+      prevStatusesRef.current[order.id] = order.status;
+    });
+  }, [activeOrders]);
 
   const [loginPhone, setLoginPhone] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -243,36 +244,43 @@ export default function ClientProfilePage() {
               <CardDescription>Acompanhe o status em tempo real.</CardDescription>
             </CardHeader>
             <CardContent>
-              {activeOrder ? (
-                <div>
-                  <div className="mb-8">
-                    <div className="flex justify-between text-sm font-medium mb-2">
-                      <span className="text-primary">{getStatusText(activeOrder.status)}</span>
-                      <span>{getStatusProgress(activeOrder.status)}%</span>
-                    </div>
-                    <div className="w-full bg-secondary h-3 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-1000 ${activeOrder.status === 'cancelled' ? 'bg-destructive' : 'bg-primary'}`} 
-                        style={{ width: `${getStatusProgress(activeOrder.status)}%` }} 
-                      />
-                    </div>
-                  </div>
+              {activeOrders.length > 0 ? (
+                <div className="space-y-6">
+                  {activeOrders.map((activeOrder: any) => (
+                    <div key={activeOrder.id} className="border border-border rounded-lg p-4 bg-card shadow-sm relative">
+                      <div className="mb-6">
+                        <div className="flex justify-between text-sm font-medium mb-2">
+                          <span className="text-primary font-bold">{getStatusText(activeOrder.status)}</span>
+                          <span className="text-muted-foreground">{getStatusProgress(activeOrder.status)}%</span>
+                        </div>
+                        <div className="w-full bg-secondary h-3 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-1000 ${activeOrder.status === 'cancelled' ? 'bg-destructive' : 'bg-primary'}`} 
+                            style={{ width: `${getStatusProgress(activeOrder.status)}%` }} 
+                          />
+                        </div>
+                      </div>
 
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-2">Pedido #{activeOrder.orderNumber}</h4>
-                    <ul className="space-y-2 mb-4">
-                      {activeOrder.items.map((item: any, idx: number) => (
-                        <li key={idx} className="flex justify-between text-sm">
-                          <span>{item.quantity}x {item.product.name}</span>
-                          <span>{formatCurrency(item.total)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="flex justify-between font-bold border-t border-border pt-4">
-                      <span>Total</span>
-                      <span className="text-primary">{formatCurrency(activeOrder.total)}</span>
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-primary" />
+                          Pedido #{activeOrder.orderNumber || activeOrder.id.slice(0, 4).toUpperCase()}
+                        </h4>
+                        <ul className="space-y-2 mb-4">
+                          {activeOrder.items.map((item: any, idx: number) => (
+                            <li key={idx} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground"><strong className="text-foreground">{item.quantity}x</strong> {item.product.name}</span>
+                              <span className="font-medium">{formatCurrency(item.total)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="flex justify-between font-bold border-t border-border pt-4 text-base">
+                          <span>Total</span>
+                          <span className="text-primary">{formatCurrency(activeOrder.total)}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-12 bg-card rounded-lg border border-border">

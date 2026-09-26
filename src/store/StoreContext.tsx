@@ -189,6 +189,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
         // Simplistic refetch on any order change
         fetchData();
+        if (payload.eventType === 'UPDATE') {
+          setClientOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, status: payload.new.status } : o));
+        } else if (payload.eventType === 'INSERT') {
+          // If a new order is inserted, we might want to refresh client history, 
+          // but we can't easily access the latest state without dependencies. 
+          // For now, since the client just created it, it usually fetches on component mount or checkout.
+        }
       })
       .subscribe();
 
