@@ -10,8 +10,9 @@ import { Plus, Trash2, Save, Store, MapPin, Image as ImageIcon, Link as LinkIcon
 import { useStore } from '../../store/StoreContext';
 
 export default function AdminSettingsPage() {
-  const { storeSettings, setStoreSettings } = useStore();
+  const { fetchStoreSettings } = useStore();
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState({
     store_name: '',
     phone: '',
@@ -24,24 +25,30 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    async function loadSettings() {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('store_settings')
+        .select('*')
+        .eq('id', 'default')
+        .maybeSingle();
 
-  const fetchSettings = async () => {
-    const { data, error } = await supabase.from('store_settings').select('*').single();
-    if (data) {
-      setForm({
-        store_name: data.store_name || '',
-        phone: data.phone || '',
-        whatsapp: data.whatsapp || '',
-        address: data.address || '',
-        logo_url: data.logo_url || '',
-        banner_url: data.banner_url || '',
-        instagram: data.instagram || '',
-        social_links: data.social_links || []
-      });
+      if (data && !error) {
+        setForm({
+          store_name: data.store_name || '',
+          phone: data.phone || '',
+          whatsapp: data.whatsapp || '',
+          address: data.address || '',
+          logo_url: data.logo_url || '',
+          banner_url: data.banner_url || '',
+          instagram: data.instagram || '',
+          social_links: Array.isArray(data.social_links) ? data.social_links : [],
+        });
+      }
+      setIsLoading(false);
     }
-  };
+    loadSettings();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -82,22 +89,23 @@ export default function AdminSettingsPage() {
       toast.error('Erro ao salvar as configurações', { description: error.message });
     } else {
       toast.success('Configurações salvas com sucesso!');
-      // Update global context
-      if (setStoreSettings) {
-        setStoreSettings({
-          name: form.store_name,
-          phone: form.phone,
-          whatsapp: form.whatsapp,
-          address: form.address,
-          logoUrl: form.logo_url,
-          bannerUrl: form.banner_url,
-          instagram: form.instagram,
-          socialLinks: form.social_links
-        });
+      if (fetchStoreSettings) {
+        await fetchStoreSettings();
       }
     }
     setLoading(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto pb-12 flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-muted-foreground">Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
