@@ -106,15 +106,37 @@ function ProductModal({ product, onClose }: any) {
 }
 
 // ── Product Card ──
-function ProductCard({ product, onSelect }: any) {
+function ProductCard({ product, onSelect, onLongPress }: any) {
   const { formatCurrency } = useStore();
+  const timerRef = useRef<any>(null);
+
+  const startPress = (e: any) => {
+    if (!product.available) return;
+    if (e.target.closest('button')) return;
+    timerRef.current = setTimeout(() => {
+      onLongPress(product);
+    }, 500);
+  };
+
+  const cancelPress = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
   return (
     <Card 
-      className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group relative" 
-      onClick={() => product.available && onSelect(product)}
+      className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group relative flex flex-row sm:flex-col p-3 sm:p-0 gap-3 sm:gap-0 select-none" 
+      onClick={() => { cancelPress(); product.available && onSelect(product); }}
+      onPointerDown={startPress}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      onTouchMove={cancelPress}
+      onContextMenu={(e) => { e.preventDefault(); cancelPress(); }}
     >
-      <div className="relative h-40 overflow-hidden bg-muted flex items-center justify-center">
+      <div className="relative w-24 h-24 sm:w-full sm:h-40 shrink-0 overflow-hidden bg-muted flex items-center justify-center rounded-md sm:rounded-none">
         {product.image ? (
           <img 
             src={product.image} 
@@ -125,26 +147,26 @@ function ProductCard({ product, onSelect }: any) {
           <span className={`text-4xl transition-transform group-hover:scale-105 ${!product.available ? 'grayscale opacity-60' : ''}`}>🍣</span>
         )}
         {product.prepTime > 0 && (
-          <span className="absolute top-2 right-2 bg-background/90 backdrop-blur text-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium shadow-sm">
-            <Clock size={12} /> {product.prepTime} min
+          <span className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-background/90 backdrop-blur text-foreground text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full flex items-center gap-1 font-medium shadow-sm">
+            <Clock size={10} className="sm:w-3 sm:h-3" /> {product.prepTime} min
           </span>
         )}
         {!product.available && (
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-            <span className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full font-bold text-sm shadow-lg">Esgotado</span>
+            <span className="bg-destructive text-destructive-foreground px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-bold text-[10px] sm:text-sm shadow-lg">Esgotado</span>
           </div>
         )}
       </div>
-      <CardContent className="p-4">
-        <h3 className="font-bold text-base mb-1 line-clamp-1">{product.name}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">
+      <CardContent className="p-0 sm:p-4 flex-1 flex flex-col justify-center sm:justify-start">
+        <h3 className="font-bold text-sm sm:text-base mb-1 line-clamp-1">{product.name}</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 sm:mb-4 sm:min-h-[2.5rem]">
           {product.description}
         </p>
         <div className="flex items-center justify-between mt-auto">
-          <span className="font-bold text-primary">{formatCurrency(product.price)}</span>
+          <span className="font-bold text-sm sm:text-base text-primary">{formatCurrency(product.price)}</span>
           {product.available && (
-            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
-              <Plus size={16} />
+            <Button size="icon" variant="secondary" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full shrink-0" onClick={(e) => { e.stopPropagation(); cancelPress(); onSelect(product); }}>
+              <Plus size={14} className="sm:w-4 sm:h-4" />
             </Button>
           )}
         </div>
@@ -158,6 +180,7 @@ export default function MenuPage() {
   const { categories, products } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [longPressProduct, setLongPressProduct] = useState<any>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const scrollToCategory = (catId: string) => {
@@ -184,18 +207,18 @@ export default function MenuPage() {
       </section>
 
       {/* Category Navigation */}
-      <nav className="sticky top-16 z-30 bg-background/95 backdrop-blur py-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-border sm:border-none">
-        <div className="flex overflow-x-auto pb-2 scrollbar-hide gap-3">
+      <nav className="sticky top-16 z-30 bg-background/95 backdrop-blur py-3 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-border sm:border-none overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 w-max">
           {activeCategories.map((cat) => (
             <button
               key={cat.id}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors
+              className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border
                 ${activeCategory === cat.id 
                   ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
                   : 'bg-card text-foreground border-border hover:bg-accent'}`}
               onClick={() => scrollToCategory(cat.id)}
             >
-              <span>{cat.icon}</span>
+              <span className="mr-1">{cat.icon}</span>
               {cat.name}
             </button>
           ))}
@@ -224,6 +247,7 @@ export default function MenuPage() {
                     key={product.id}
                     product={product}
                     onSelect={setSelectedProduct}
+                    onLongPress={setLongPressProduct}
                   />
                 ))}
               </div>
@@ -238,6 +262,28 @@ export default function MenuPage() {
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
         />
+      )}
+
+      {/* Long Press Detail Modal */}
+      {longPressProduct && (
+        <Dialog open={true} onOpenChange={() => setLongPressProduct(null)}>
+          <DialogContent className="sm:max-w-sm p-0 overflow-hidden border-none bg-transparent shadow-2xl scale-105 transition-transform duration-300">
+            <div className="bg-card rounded-xl overflow-hidden pointer-events-none">
+              <div className="relative h-64 w-full bg-muted flex items-center justify-center">
+                {longPressProduct.image ? (
+                  <img src={longPressProduct.image} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-6xl">🍣</span>
+                )}
+              </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-bold mb-2">{longPressProduct.name}</h3>
+                <p className="text-muted-foreground mb-4">{longPressProduct.description}</p>
+                <div className="text-xl font-bold text-primary">{useStore().formatCurrency(longPressProduct.price)}</div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
