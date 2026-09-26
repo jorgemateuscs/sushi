@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { ShoppingCart, Settings, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Settings, User, LogOut, MessageCircle } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
 import CartDrawer from './CartDrawer';
 import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
+
+const Instagram = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
 
 export default function ClientLayout() {
   const { cart, session, profile, clientPhone, clientProfile, setClientPhone, storeSettings } = useStore();
@@ -34,6 +42,20 @@ export default function ClientLayout() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
             
+            {/* Redes Sociais */}
+            <div className="flex items-center gap-3 sm:mr-2 sm:border-r sm:border-border sm:pr-4">
+              {storeSettings?.instagram && (
+                <a href={`https://instagram.com/${storeSettings.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#E1306C] transition-colors" title="Instagram">
+                  <Instagram size={20} />
+                </a>
+              )}
+              {(storeSettings?.whatsapp || storeSettings?.phone) && (
+                <a href={`https://wa.me/55${(storeSettings.whatsapp || storeSettings.phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#25D366] transition-colors" title="WhatsApp">
+                  <MessageCircle size={20} />
+                </a>
+              )}
+            </div>
+
             {clientPhone ? (
               <div className="flex items-center gap-1 sm:gap-2">
                 <Button variant="ghost" size="sm" asChild>

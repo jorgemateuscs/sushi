@@ -6,7 +6,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
-import { Plus, Trash2, Save, Store, MapPin, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { Plus, Trash2, Save, Store, MapPin, Image as ImageIcon, Link as LinkIcon, Upload } from 'lucide-react';
 import { useStore } from '../../store/StoreContext';
 
 export default function AdminSettingsPage() {
@@ -24,6 +24,9 @@ export default function AdminSettingsPage() {
     support_cancel_link: '',
     social_links: [] as { label: string, url: string }[]
   });
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   useEffect(() => {
     async function loadSettings() {
@@ -73,6 +76,38 @@ export default function AdminSettingsPage() {
     const updated = [...form.social_links];
     updated.splice(index, 1);
     setForm({ ...form, social_links: updated });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (type === 'logo') setUploadingLogo(true);
+      else setUploadingBanner(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}-${Date.now()}.${fileExt}`;
+      const filePath = `settings/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('store-assets')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('store-assets')
+        .getPublicUrl(filePath);
+
+      setForm(prev => ({ ...prev, [type === 'logo' ? 'logo_url' : 'banner_url']: data.publicUrl }));
+      toast.success('Imagem carregada com sucesso!');
+    } catch (error: any) {
+      toast.error('Erro no upload da imagem', { description: error.message });
+    } finally {
+      if (type === 'logo') setUploadingLogo(false);
+      else setUploadingBanner(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -172,13 +207,58 @@ export default function AdminSettingsPage() {
             <CardDescription>Links das imagens para exibição no catálogo.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="logo_url">URL da Logo</Label>
-              <Input id="logo_url" name="logo_url" value={form.logo_url} onChange={handleChange} placeholder="https://..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="banner_url">URL da Capa (Banner)</Label>
-              <Input id="banner_url" name="banner_url" value={form.banner_url} onChange={handleChange} placeholder="https://..." />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="logo_url">URL da Logo</Label>
+                <div className="flex gap-2 items-center">
+                  <Input id="logo_url" name="logo_url" value={form.logo_url} onChange={handleChange} placeholder="https://..." className="flex-1" />
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileUpload(e, 'logo')} 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      disabled={uploadingLogo}
+                    />
+                    <Button type="button" variant="outline" disabled={uploadingLogo}>
+                      {uploadingLogo ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <Upload size={16} />}
+                      <span className="ml-2 hidden sm:inline">Upload</span>
+                    </Button>
+                  </div>
+                </div>
+                {form.logo_url && (
+                  <div className="mt-2 bg-muted rounded-md p-2 w-max border border-border">
+                    <img src={form.logo_url} alt="Logo preview" className="h-16 w-16 object-contain" />
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="banner_url">URL da Capa (Banner)</Label>
+                <div className="flex gap-2 items-center">
+                  <Input id="banner_url" name="banner_url" value={form.banner_url} onChange={handleChange} placeholder="https://..." className="flex-1" />
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileUpload(e, 'banner')} 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      disabled={uploadingBanner}
+                    />
+                    <Button type="button" variant="outline" disabled={uploadingBanner}>
+                      {uploadingBanner ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <Upload size={16} />}
+                      <span className="ml-2 hidden sm:inline">Upload</span>
+                    </Button>
+                  </div>
+                </div>
+                {form.banner_url && (
+                  <div className="mt-2 bg-muted rounded-md overflow-hidden border border-border h-32 w-full max-w-sm">
+                    <img src={form.banner_url} alt="Banner preview" className="h-full w-full object-cover" />
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
