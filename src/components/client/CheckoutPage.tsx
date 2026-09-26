@@ -118,14 +118,16 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (!isFormValid || isSubmitting) return;
 
-    if (!isValidBrazilianPhone(customer.phone)) {
-      toast.error('Número de telefone inválido. Verifique o DDD e os dígitos.');
+    const cleanPhone = customer.phone.replace(/\D/g, '');
+     
+    if (!isValidBrazilianPhone(cleanPhone)) {
+      toast.error('Informe um número de WhatsApp/celular válido com DDD (ex: 99 99999-9999).');
       return;
     }
 
     if (!isValidName(customer.name)) {
-      toast.error('Por favor, informe seu nome completo (nome e sobrenome).');
-      return;
+      toast.error('Informe seu nome completo (ao menos nome e sobrenome).');
+      return; 
     }
 
     // Rate Limiting (Prevenção de Abuso Local)
@@ -388,7 +390,7 @@ export default function CheckoutPage() {
           type="submit"
           size="lg"
           className="w-full h-14 text-lg font-bold"
-          disabled={!isFormValid || isSubmitting}
+          disabled={!isFormValid || isSubmitting || customer.phone.replace(/\D/g, '').length < 10}
         >
           {isSubmitting ? 'A processar pedido...' : `🚀 Confirmar Pedido — ${formatCurrency(total)}`}
         </Button>

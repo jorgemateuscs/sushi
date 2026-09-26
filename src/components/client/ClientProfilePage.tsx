@@ -97,12 +97,12 @@ export default function ClientProfilePage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isValidBrazilianPhone(loginPhone)) {
-      toast.error('Número de telefone inválido. Verifique o DDD e os dígitos.');
+    const cleanPhone = loginPhone.replace(/\D/g, '');
+    if (!isValidBrazilianPhone(cleanPhone)) {
+      toast.error('Informe um número de WhatsApp/celular válido com DDD (ex: 99 99999-9999).');
       return;
     }
 
-    const cleanPhone = loginPhone.replace(/\D/g, '');
     setIsLoggingIn(true);
     const { data } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
       if (data) {
@@ -147,7 +147,7 @@ export default function ClientProfilePage() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoggingIn}>
+              <Button type="submit" className="w-full" disabled={isLoggingIn || loginPhone.replace(/\D/g, '').length < 10}>
                 {isLoggingIn ? 'Buscando...' : 'Ver meus pedidos'}
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/')}>
@@ -163,13 +163,14 @@ export default function ClientProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isValidName(form.full_name)) {
-      toast.error('Por favor, informe seu nome e sobrenome completo.');
+    const cleanPhone = form.phone.replace(/\D/g, '');
+    if (!isValidBrazilianPhone(cleanPhone)) {
+      toast.error('Informe um número de WhatsApp/celular válido com DDD (ex: 99 99999-9999).');
       return;
     }
 
-    if (!isValidBrazilianPhone(form.phone)) {
-      toast.error('Número de telefone/WhatsApp inválido.');
+    if (!isValidName(form.full_name)) {
+      toast.error('Informe seu nome completo (ao menos nome e sobrenome).');
       return;
     }
 
@@ -383,7 +384,7 @@ export default function ClientProfilePage() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={loading} className="w-full md:w-auto">
+                <Button type="submit" disabled={loading || form.phone.replace(/\D/g, '').length < 10} className="w-full md:w-auto">
                   {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
               </form>
