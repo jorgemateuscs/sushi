@@ -195,10 +195,14 @@ export default function OrdersPage() {
                         >
                           <Phone size={10} /> {order.customer.phone}
                         </a>
-                        <span className="inline-flex items-center gap-1 text-[0.7rem] text-muted-foreground bg-accent px-2 py-1 rounded-full">
-                          <MapPin size={10} />
-                          <span className="line-clamp-1 max-w-[150px]">
-                            {order.customer.rua}, {order.customer.numero}
+                        <span 
+                          className="flex items-start gap-2 text-[0.7rem] text-muted-foreground bg-accent px-3 py-2 rounded-xl min-h-fit w-full mt-1"
+                          title={order.customer.rua}
+                        >
+                          <MapPin size={12} className="shrink-0 mt-[2px]" />
+                          <span className="whitespace-normal break-words leading-tight">
+                            {order.customer.rua}
+                            {order.customer.numero && `, ${order.customer.numero}`}
                             {order.customer.bairro && ` - ${order.customer.bairro}`}
                           </span>
                         </span>
