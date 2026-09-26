@@ -131,8 +131,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (payload.eventType === 'INSERT') {
           const soundEnabledStr = localStorage.getItem('admin_sound_enabled');
           const soundEnabled = soundEnabledStr !== null ? JSON.parse(soundEnabledStr) : true;
+          const isAdminRoute = window.location.pathname.startsWith('/admin');
           
-          if (soundEnabled) {
+          if (soundEnabled && isAdminRoute) {
             toast('🔔 Novo pedido recebido!', {
               description: 'Verifique a coluna Recebidos.',
               duration: 5000,

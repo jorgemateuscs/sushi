@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 
 export default function CheckoutPage() {
-  const { cart, cartNotes, formatCurrency, DELIVERY_FEE, createOrder, clientPhone, clientProfile } = useStore();
+  const { cart, cartNotes, formatCurrency, DELIVERY_FEE, createOrder, clientPhone, clientProfile, setClientPhone } = useStore();
   const navigate = useNavigate();
 
   const [customer, setCustomer] = useState({
@@ -39,10 +39,6 @@ export default function CheckoutPage() {
       setCustomer(prev => ({ ...prev, phone: clientPhone }));
     }
   }, [clientProfile, clientPhone]);
-
-  if (!clientPhone) {
-    return <Navigate to="/" replace />;
-  }
 
   const [paymentMethod, setPaymentMethod] = useState('');
   const [changeFor, setChangeFor] = useState('');
@@ -88,6 +84,7 @@ export default function CheckoutPage() {
     try {
       await createOrder({ ...customer, phone: sanitizedPhone }, payment);
       localStorage.setItem('sushi_client_phone', sanitizedPhone);
+      setClientPhone(sanitizedPhone); // Update global state
       toast.success('Pedido realizado com sucesso! 🎉');
       navigate('/cliente/perfil', { replace: true });
     } catch (error) {
