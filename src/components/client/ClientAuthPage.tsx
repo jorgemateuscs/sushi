@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/StoreContext';
 import { supabase } from '../../lib/supabase';
+import { getPhoneValidationError, isValidName } from '../../lib/validators';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -20,17 +21,41 @@ export default function ClientAuthPage() {
 
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   if (clientPhone) {
     return <Navigate to={from} replace />;
   }
 
+  const maskPhone = (value: string) => {
+    let v = value.replace(/\D/g, '');
+    if (v.length > 11) v = v.substring(0, 11);
+    if (v.length === 0) return '';
+    if (v.length <= 2) return `(${v}`;
+    if (v.length <= 6) return `(${v.substring(0, 2)}) ${v.substring(2)}`;
+    if (v.length <= 10) return `(${v.substring(0, 2)}) ${v.substring(2, 6)}-${v.substring(6)}`;
+    return `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(maskPhone(e.target.value));
+    if (phoneError) setPhoneError(null);
+  };
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone) return;
     
+    const errorMsg = getPhoneValidationError(phone);
+    if (errorMsg) {
+      setPhoneError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+    
     setLoading(true);
-    const { data, error } = await supabase.from('customers').select('*').eq('phone', phone).single();
+    const cleanPhone = phone.replace(/\D/g, '');
+    const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 is not found
       toast.error('Erro ao buscar telefone', { description: error.message });
@@ -40,7 +65,7 @@ export default function ClientAuthPage() {
 
     if (data) {
       // Exists
-      setClientPhone(phone);
+      setClientPhone(cleanPhone);
       toast.success(`Bem-vindo(a) de volta, ${data.full_name.split(' ')[0]}!`);
       navigate(from);
     } else {
@@ -54,9 +79,15 @@ export default function ClientAuthPage() {
     e.preventDefault();
     if (!name || !phone) return;
 
+    if (!isValidName(name)) {
+      toast.error('Informe seu nome completo (ao menos nome e sobrenome).');
+      return;
+    }
+
     setLoading(true);
+    const cleanPhone = phone.replace(/\D/g, '');
     const { error } = await supabase.from('customers').insert({
-      phone,
+      phone: cleanPhone,
       full_name: name
     });
 
@@ -66,7 +97,7 @@ export default function ClientAuthPage() {
       return;
     }
 
-    setClientPhone(phone);
+    setClientPhone(cleanPhone);
     toast.success('Cadastro realizado com sucesso!');
     navigate(from);
   };
@@ -95,11 +126,13 @@ export default function ClientAuthPage() {
                   type="tel"
                   placeholder="(11) 99999-9999"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={handlePhoneChange}
+                  className={phoneError ? 'border-red-500' : ''}
                   required
                 />
+                {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || phone.replace(/\D/g, '').length < 10}>
                 {loading ? 'Verificando...' : 'Continuar'}
               </Button>
             </form>
