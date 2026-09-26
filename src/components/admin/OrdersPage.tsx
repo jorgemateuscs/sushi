@@ -92,6 +92,7 @@ export default function OrdersPage() {
             ].map(p => (
               <button
                 key={p.value}
+                type="button"
                 onClick={() => handlePeriodChange(p.value as any)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${adminOrderPeriod === p.value ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >

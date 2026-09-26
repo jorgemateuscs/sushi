@@ -18,6 +18,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [clientOrders, setClientOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isFirstLoad = React.useRef(true);
   const [adminOrderFilter, setAdminOrderFilter] = useState<{ start: string, end: string }>(() => {
     const s = new Date(); s.setHours(0,0,0,0);
     const e = new Date(); e.setHours(23,59,59,999);
@@ -72,8 +73,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [clientPhone]);
 
   useEffect(() => {
-    const fetchData = async (background = false) => {
-      if (!background) setIsLoading(true);
+    const fetchData = async () => {
+      if (isFirstLoad.current) setIsLoading(true);
       try {
         // Fetch Categories
         const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
@@ -115,7 +116,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
-        if (!background) setIsLoading(false);
+        if (isFirstLoad.current) {
+          setIsLoading(false);
+          isFirstLoad.current = false;
+        }
       }
     };
 
@@ -124,8 +128,41 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // ─── Realtime Subscriptions ───
     const orderSub = supabase.channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const soundEnabledStr = localStorage.getItem('admin_sound_enabled');
+          const soundEnabled = soundEnabledStr !== null ? JSON.parse(soundEnabledStr) : true;
+          
+          if (soundEnabled) {
+            toast('🔔 Novo pedido recebido!', {
+              description: 'Verifique a coluna Recebidos.',
+              duration: 5000,
+            });
+            // Play sound
+            try {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = 800;
+              gain.gain.value = 0.3;
+              osc.start();
+              osc.stop(ctx.currentTime + 0.3);
+              setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.frequency.value = 1000;
+                gain2.gain.value = 0.3;
+                osc2.start();
+                osc2.stop(ctx.currentTime + 0.3);
+              }, 350);
+            } catch (e) {}
+          }
+        }
         // Simplistic refetch on any order change
-        fetchData(true);
+        fetchData();
       })
       .subscribe();
 

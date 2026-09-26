@@ -52,55 +52,10 @@ export default function AdminLayout() {
       document.removeEventListener('keydown', unlockAudio);
     };
   }, []);
-  const prevCountRef = React.useRef(orders.length);
-  const isInitialLoad = React.useRef(true);
-
   React.useEffect(() => {
-    if (isLoading) {
-      prevCountRef.current = orders.length;
-      return;
-    }
-
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
-      prevCountRef.current = orders.length;
-      return;
-    }
-
-    if (orders.length > prevCountRef.current) {
-      if (soundEnabled) {
-        toast('🔔 Novo pedido recebido!', {
-          description: 'Verifique a coluna Recebidos.',
-          duration: 5000,
-        });
-        // Play sound (simple beep using Web Audio API)
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.value = 800;
-          gain.gain.value = 0.3;
-          osc.start();
-          osc.stop(ctx.currentTime + 0.3);
-          setTimeout(() => {
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.frequency.value = 1000;
-            gain2.gain.value = 0.3;
-            osc2.start();
-            osc2.stop(ctx.currentTime + 0.3);
-          }, 350);
-        } catch (e) {
-          // Silently fail if audio not available
-        }
-      }
-    }
-    prevCountRef.current = orders.length;
-  }, [orders.length, soundEnabled, isLoading]);
+    // A lógica de som baseada em orders.length foi removida daqui
+    // para ser acionada diretamente pelo StoreContext via Realtime (INSERT).
+  }, []);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
