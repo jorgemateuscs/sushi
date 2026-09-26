@@ -196,11 +196,11 @@ export default function OrdersPage() {
                           <Phone size={10} /> {order.customer.phone}
                         </a>
                         <span 
-                          className="flex items-start gap-2 text-[0.7rem] text-muted-foreground bg-accent px-3 py-2 rounded-xl min-h-fit w-full mt-1"
+                          className="flex items-start gap-2 text-muted-foreground bg-accent p-2.5 rounded-xl min-h-fit w-full mt-1"
                           title={order.customer.rua}
                         >
-                          <MapPin size={12} className="shrink-0 mt-[2px]" />
-                          <span className="whitespace-normal break-words leading-tight">
+                          <MapPin size={12} className="shrink-0 mt-0.5" />
+                          <span className="flex-1 min-w-0 break-all overflow-hidden text-left leading-relaxed text-xs">
                             {order.customer.rua}
                             {order.customer.numero && `, ${order.customer.numero}`}
                             {order.customer.bairro && ` - ${order.customer.bairro}`}
