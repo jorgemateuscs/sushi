@@ -98,7 +98,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clientPhone]);
 
+  const fetchStoreSettings = async () => {
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*')
+      .eq('id', 'default')
+      .maybeSingle();
+    if (data && !error) {
+      setStoreSettings({
+        name: data.store_name || 'Sushiya',
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        address: data.address,
+        logoUrl: data.logo_url,
+        bannerUrl: data.banner_url,
+        instagram: data.instagram,
+        socialLinks: data.social_links || []
+      });
+    }
+  };
+
   useEffect(() => {
+
     const fetchData = async () => {
       if (isFirstLoad.current) setIsLoading(true);
       try {
@@ -119,19 +140,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })));
 
         // Fetch Store Settings
-        const { data: settings } = await supabase.from('store_settings').select('*').single();
-        if (settings) {
-          setStoreSettings({
-            name: settings.store_name || 'Sushiya',
-            phone: settings.phone,
-            whatsapp: settings.whatsapp,
-            address: settings.address,
-            logoUrl: settings.logo_url,
-            bannerUrl: settings.banner_url,
-            instagram: settings.instagram,
-            socialLinks: settings.social_links || []
-          });
-        }
+        await fetchStoreSettings();
 
         // Fetch Orders only if Admin
         if (profile?.role === 'admin') {
@@ -455,6 +464,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         clientProfile,
         storeSettings,
         setStoreSettings,
+        fetchStoreSettings,
         isLoading,
         categories,
         products,

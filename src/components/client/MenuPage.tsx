@@ -177,7 +177,7 @@ function ProductCard({ product, onSelect, onLongPress }: any) {
 
 // ── Menu Page ──
 export default function MenuPage() {
-  const { categories, products } = useStore();
+  const { categories, products, storeSettings } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [longPressProduct, setLongPressProduct] = useState<any>(null);
