@@ -5,6 +5,7 @@ import { useStore } from '../../store/StoreContext';
 import { supabase } from '../../lib/supabase';
 import { STORE_PIX_KEY } from '../../data/seed';
 import { isValidBrazilianPhone, isValidName } from '../../lib/validators';
+import { validateDevicePhoneAttempt, recordDevicePhoneAttempt } from '../../lib/deviceSecurity';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -47,6 +48,7 @@ export default function CheckoutPage() {
   const [pixCopied, setPixCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingPhone, setIsSearchingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const handlePhoneBlur = async () => {
     const cleanPhone = customer.phone.replace(/\D/g, '');
@@ -112,8 +114,6 @@ export default function CheckoutPage() {
     });
   };
 
-  const [submitHistory, setSubmitHistory] = useState<{time: number, phone: string}[]>([]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || isSubmitting) return;
@@ -130,18 +130,15 @@ export default function CheckoutPage() {
       return; 
     }
 
-    // Rate Limiting (Prevenção de Abuso Local)
-    const now = Date.now();
-    const tenMinsAgo = now - 10 * 60 * 1000;
-    const recentSubmits = submitHistory.filter(s => s.time > tenMinsAgo);
-    
-    const uniquePhones = new Set(recentSubmits.map(s => s.phone)).size;
-    if (uniquePhones >= 3 && !recentSubmits.some(s => s.phone === customer.phone)) {
-      toast.error('Bloqueio de segurança: Foram detetados demasiados números diferentes. Aguarde 10 minutos.');
+    const securityCheck = validateDevicePhoneAttempt(customer.phone);
+    if (!securityCheck.allowed) {
+      setPhoneError(securityCheck.message || 'Bloqueio de segurança.');
+      toast.error(securityCheck.message);
       return;
     }
     
-    setSubmitHistory([...recentSubmits, { time: now, phone: customer.phone }]);
+    setPhoneError(null);
+    recordDevicePhoneAttempt(customer.phone);
     setIsSubmitting(true);
 
     // Sanitize phone (only numbers)
@@ -205,8 +202,10 @@ export default function CheckoutPage() {
                 onChange={handleChange('phone')}
                 onBlur={handlePhoneBlur}
                 disabled={isSearchingPhone}
+                className={phoneError ? 'border-red-500' : ''}
                 required
               />
+              {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
             </div>
           </CardContent>
         </Card>

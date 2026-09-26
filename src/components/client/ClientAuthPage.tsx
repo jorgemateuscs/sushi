@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/StoreContext';
 import { supabase } from '../../lib/supabase';
 import { getPhoneValidationError, isValidName } from '../../lib/validators';
+import { validateDevicePhoneAttempt, recordDevicePhoneAttempt } from '../../lib/deviceSecurity';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -53,6 +54,14 @@ export default function ClientAuthPage() {
       return;
     }
     
+    const securityCheck = validateDevicePhoneAttempt(phone);
+    if (!securityCheck.allowed) {
+      setPhoneError(securityCheck.message || 'Bloqueio de segurança.');
+      toast.error(securityCheck.message);
+      return;
+    }
+    
+    recordDevicePhoneAttempt(phone);
     setLoading(true);
     const cleanPhone = phone.replace(/\D/g, '');
     const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
