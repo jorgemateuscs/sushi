@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -27,6 +27,8 @@ export default function AdminSettingsPage() {
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadSettings() {
@@ -87,12 +89,12 @@ export default function AdminSettingsPage() {
       else setUploadingBanner(true);
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${type}-${Date.now()}.${fileExt}`;
+      const fileName = `${type}_${Date.now()}.${fileExt}`;
       const filePath = `settings/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('store-assets')
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -209,26 +211,28 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="logo_url">URL da Logo</Label>
-                <div className="flex gap-2 items-center">
-                  <Input id="logo_url" name="logo_url" value={form.logo_url} onChange={handleChange} placeholder="https://..." className="flex-1" />
-                  <div className="relative">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={(e) => handleFileUpload(e, 'logo')} 
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      disabled={uploadingLogo}
-                    />
-                    <Button type="button" variant="outline" disabled={uploadingLogo}>
-                      {uploadingLogo ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <Upload size={16} />}
-                      <span className="ml-2 hidden sm:inline">Upload</span>
-                    </Button>
-                  </div>
+                <div className="flex gap-2 items-center mt-2">
+                  <Input id="logo_url" name="logo_url" value={form.logo_url} onChange={handleChange} placeholder="URL direta (opcional)" className="flex-1" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => handleFileUpload(e, 'logo')} 
+                    className="hidden"
+                    ref={logoInputRef}
+                    disabled={uploadingLogo}
+                  />
+                  <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo} className="shrink-0">
+                    {uploadingLogo ? (
+                      <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div> Enviando imagem...</>
+                    ) : (
+                      <>📁 <span className="ml-2">Escolher da Galeria</span></>
+                    )}
+                  </Button>
                 </div>
                 {form.logo_url && (
-                  <div className="mt-2 bg-muted rounded-md p-2 w-max border border-border">
+                  <div className="mt-4 bg-muted rounded-md p-2 w-max border border-border">
                     <img src={form.logo_url} alt="Logo preview" className="h-16 w-16 object-contain" />
+                    <Button type="button" variant="ghost" size="sm" className="mt-2 text-destructive w-full" onClick={() => setForm({...form, logo_url: ''})}>Remover</Button>
                   </div>
                 )}
               </div>
@@ -236,26 +240,29 @@ export default function AdminSettingsPage() {
               <Separator />
 
               <div className="space-y-2">
-                <Label htmlFor="banner_url">URL da Capa (Banner)</Label>
-                <div className="flex gap-2 items-center">
-                  <Input id="banner_url" name="banner_url" value={form.banner_url} onChange={handleChange} placeholder="https://..." className="flex-1" />
-                  <div className="relative">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={(e) => handleFileUpload(e, 'banner')} 
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      disabled={uploadingBanner}
-                    />
-                    <Button type="button" variant="outline" disabled={uploadingBanner}>
-                      {uploadingBanner ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <Upload size={16} />}
-                      <span className="ml-2 hidden sm:inline">Upload</span>
-                    </Button>
-                  </div>
+                <Label htmlFor="banner_url">Capa (Banner)</Label>
+                <div className="flex gap-2 items-center mt-2">
+                  <Input id="banner_url" name="banner_url" value={form.banner_url} onChange={handleChange} placeholder="URL direta (opcional)" className="flex-1" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => handleFileUpload(e, 'banner')} 
+                    className="hidden"
+                    ref={bannerInputRef}
+                    disabled={uploadingBanner}
+                  />
+                  <Button type="button" variant="outline" onClick={() => bannerInputRef.current?.click()} disabled={uploadingBanner} className="shrink-0">
+                    {uploadingBanner ? (
+                      <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div> Enviando imagem...</>
+                    ) : (
+                      <>📁 <span className="ml-2">Escolher da Galeria</span></>
+                    )}
+                  </Button>
                 </div>
                 {form.banner_url && (
-                  <div className="mt-2 bg-muted rounded-md overflow-hidden border border-border h-32 w-full max-w-sm">
+                  <div className="mt-4 bg-muted rounded-md overflow-hidden border border-border h-32 w-full max-w-sm relative">
                     <img src={form.banner_url} alt="Banner preview" className="h-full w-full object-cover" />
+                    <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => setForm({...form, banner_url: ''})}>Remover</Button>
                   </div>
                 )}
               </div>

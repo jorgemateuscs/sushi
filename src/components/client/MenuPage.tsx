@@ -205,7 +205,10 @@ export default function MenuPage() {
             <img src={storeSettings.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="relative z-10">
+        <div className="relative z-10 flex flex-col items-center">
+          {storeSettings?.logoUrl && (
+            <img src={storeSettings.logoUrl} alt="Logo" className="w-24 h-24 object-contain mb-4 rounded-full bg-background/50 backdrop-blur-sm p-2 shadow-sm border border-border" />
+          )}
           <h1 className="text-3xl font-bold mb-3">{storeSettings?.name || 'Sushiya Delivery'}</h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
             {storeSettings?.address || 'Sushi artesanal feito com ingredientes frescos. Peça agora e receba no conforto da sua casa!'}
