@@ -106,7 +106,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
     if (data && !error) {
       setStoreSettings({
-        name: data.store_name || 'Sushiya',
+        name: data.store_name || 'Sushi Hause',
         phone: data.phone,
         whatsapp: data.whatsapp,
         address: data.address,

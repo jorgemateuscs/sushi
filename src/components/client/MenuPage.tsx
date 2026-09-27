@@ -37,7 +37,7 @@ function ProductModal({ product, onClose }: any) {
           {product.image ? (
             <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-4xl">🍣</span>
+            <span className="text-4xl">🍽️</span>
           )}
         </div>
         <div className="p-6">
@@ -144,7 +144,7 @@ function ProductCard({ product, onSelect, onLongPress }: any) {
             className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${!product.available ? 'grayscale opacity-60' : ''}`}
           />
         ) : (
-          <span className={`text-4xl transition-transform group-hover:scale-105 ${!product.available ? 'grayscale opacity-60' : ''}`}>🍣</span>
+          <span className={`text-4xl transition-transform group-hover:scale-105 ${!product.available ? 'grayscale opacity-60' : ''}`}>🍽️</span>
         )}
         {product.prepTime > 0 && (
           <span className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-background/90 backdrop-blur text-foreground text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full flex items-center gap-1 font-medium shadow-sm">
@@ -177,7 +177,7 @@ function ProductCard({ product, onSelect, onLongPress }: any) {
 
 // ── Menu Page ──
 export default function MenuPage() {
-  const { categories, products, storeSettings } = useStore();
+  const { categories, products, storeSettings, isLoading } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [longPressProduct, setLongPressProduct] = useState<any>(null);
@@ -219,10 +219,14 @@ export default function MenuPage() {
           </div>
         )}
         <div className="relative z-10 flex flex-col items-center">
-          {storeSettings?.logoUrl && (
+          {storeSettings?.logoUrl ? (
             <img src={storeSettings.logoUrl} alt="Logo" className="w-24 h-24 object-contain mb-4 rounded-full bg-background/50 backdrop-blur-sm p-2 shadow-sm border border-border" />
+          ) : (
+            <div className="w-24 h-24 mb-4 rounded-full bg-background/50 backdrop-blur-sm p-2 shadow-sm border border-border flex items-center justify-center text-5xl">🍽️</div>
           )}
-          <h1 className="text-3xl font-bold mb-3">{storeSettings?.name || 'Sushiya Delivery'}</h1>
+          <h1 className="text-3xl font-bold mb-3">
+            {isLoading ? <div className="animate-pulse bg-muted h-8 w-48 rounded mx-auto"></div> : (storeSettings?.name ? `${storeSettings.name}` : 'Sushi Hause')}
+          </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
             {storeSettings?.address || 'Sushi artesanal feito com ingredientes frescos. Peça agora e receba no conforto da sua casa!'}
           </p>
@@ -299,7 +303,7 @@ export default function MenuPage() {
                 {longPressProduct.image ? (
                   <img src={longPressProduct.image} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-6xl">🍣</span>
+                  <span className="text-6xl">🍽️</span>
                 )}
               </div>
               <div className="p-6">

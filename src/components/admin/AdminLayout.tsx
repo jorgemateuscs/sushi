@@ -98,8 +98,12 @@ export default function AdminLayout() {
         <div className="h-16 flex items-center justify-between px-6 border-b border-border">
           <div className="flex flex-col">
             <Link to="/admin" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
-              <span className="text-xl">🍣</span>
-              <span>{useStore().storeSettings?.name || 'Sushiya'}</span>
+              <span className="text-xl">🍽️</span>
+              {isLoading ? (
+                <div className="animate-pulse bg-muted h-6 w-28 rounded"></div>
+              ) : (
+                <span>{useStore().storeSettings?.name || 'Sushi Hause'}</span>
+              )}
             </Link>
             <span className="text-xs text-muted-foreground">Painel Administrativo</span>
           </div>

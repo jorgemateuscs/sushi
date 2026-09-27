@@ -387,7 +387,7 @@ export default function ProductsPage() {
                     <img src={product.image} alt={product.name} className="w-12 h-12 rounded-md object-cover border border-border" />
                   ) : (
                     <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center text-xl">
-                      🍣
+                      🍽️
                     </div>
                   )}
                 </TableCell>

@@ -15,7 +15,7 @@ const Instagram = ({ size = 20, className = "" }) => (
 );
 
 export default function ClientLayout() {
-  const { cart, session, profile, clientPhone, clientProfile, setClientPhone, storeSettings } = useStore();
+  const { cart, session, profile, clientPhone, clientProfile, setClientPhone, storeSettings, isLoading } = useStore();
   const [cartOpen, setCartOpen] = useState(false);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -36,9 +36,13 @@ export default function ClientLayout() {
             {storeSettings?.logoUrl ? (
               <img src={storeSettings.logoUrl} alt={storeSettings.name} className="h-8 w-8 object-contain" />
             ) : (
-              <span className="text-2xl">🍣</span>
+              <span className="text-2xl">🍽️</span>
             )}
-            <span>{storeSettings?.name || 'Sushiya'}</span>
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-6 w-28 rounded"></div>
+            ) : (
+              <span>{storeSettings?.name || 'Sushi Hause'}</span>
+            )}
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
             

@@ -47,7 +47,7 @@ export default function CartDrawer({ onClose }: { onClose: () => void }) {
         <div className="flex-1 overflow-y-auto p-6">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-              <span className="text-6xl mb-4">🍣</span>
+              <span className="text-6xl mb-4">🍽️</span>
               <h3 className="text-xl font-bold">Seu carrinho está vazio</h3>
               <p className="text-muted-foreground text-sm max-w-[250px]">
                 Explore nosso cardápio e adicione itens deliciosos!
@@ -67,7 +67,7 @@ export default function CartDrawer({ onClose }: { onClose: () => void }) {
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-md border border-border bg-muted flex items-center justify-center shrink-0">
-                        <span className="text-xl">🍣</span>
+                        <span className="text-xl">🍽️</span>
                       </div>
                     )}
                     <div className="flex-1 flex flex-col">

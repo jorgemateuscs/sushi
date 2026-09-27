@@ -64,7 +64,7 @@ export default function TrackingPage() {
   };
 
   const whatsappMessage = encodeURIComponent(
-    `Olá ${storeSettings?.name || STORE_NAME}! 🍣\n\nGostaria de informações sobre meu pedido #${order.orderNumber}.\n\nNome: ${order.customer.name}\nTelefone: ${order.customer.phone}\nTotal: ${formatCurrency(order.total)}`
+    `Olá ${storeSettings?.name || 'Sushi Hause'}!\n\nGostaria de informações sobre meu pedido #${order.orderNumber}.\n\nNome: ${order.customer.name}\nTelefone: ${order.customer.phone}\nTotal: ${formatCurrency(order.total)}`
   );
   const whatsappNumber = storeSettings?.whatsapp || STORE_WHATSAPP;
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappMessage}`;

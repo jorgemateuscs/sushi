@@ -291,4 +291,4 @@ export const PRODUCTS: Product[] = [
 export const DELIVERY_FEE = 8.00;
 export const STORE_WHATSAPP = '5511999999999';
 export const STORE_PIX_KEY = 'sushi@restaurante.com.br';
-export const STORE_NAME = 'Sushiya';
+export const STORE_NAME = 'Sushi Hause';
