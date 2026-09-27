@@ -20,6 +20,7 @@ export default function ClientProfilePage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     full_name: '',
+    phone: '',
     address_street: '',
     address_number: '',
     address_neighborhood: '',
@@ -40,13 +41,16 @@ export default function ClientProfilePage() {
     if (clientProfile) {
       setForm({
         full_name: clientProfile.full_name || '',
+        phone: clientProfile.phone || clientPhone || '',
         address_street: clientProfile.address_street || '',
         address_number: clientProfile.address_number || '',
         address_neighborhood: clientProfile.address_neighborhood || '',
         address_reference: clientProfile.address_reference || ''
       });
+    } else if (clientPhone) {
+      setForm((prev) => ({ ...prev, phone: clientPhone || '' }));
     }
-  }, [clientProfile]);
+  }, [clientProfile, clientPhone]);
 
   const prevStatusesRef = React.useRef<Record<string, string>>({});
 
@@ -97,7 +101,7 @@ export default function ClientProfilePage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const cleanPhone = loginPhone.replace(/\D/g, '');
+    const cleanPhone = String(loginPhone || '').replace(/\D/g, '');
     if (!isValidBrazilianPhone(cleanPhone)) {
       toast.error('Informe um número de WhatsApp/celular válido com DDD (ex: 99 99999-9999).');
       return;
@@ -147,7 +151,7 @@ export default function ClientProfilePage() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoggingIn || loginPhone.replace(/\D/g, '').length < 10}>
+              <Button type="submit" className="w-full" disabled={isLoggingIn || String(loginPhone || '').replace(/\D/g, '').length < 10}>
                 {isLoggingIn ? 'Buscando...' : 'Ver meus pedidos'}
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/')}>
@@ -163,7 +167,7 @@ export default function ClientProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const cleanPhone = form.phone.replace(/\D/g, '');
+    const cleanPhone = String(form.phone || '').replace(/\D/g, '');
     if (!isValidBrazilianPhone(cleanPhone)) {
       toast.error('Informe um número de WhatsApp/celular válido com DDD (ex: 99 99999-9999).');
       return;
@@ -212,7 +216,7 @@ export default function ClientProfilePage() {
     
     let finalUrl = link;
     if (!finalUrl.startsWith('http')) {
-      finalUrl = `https://wa.me/55${finalUrl.replace(/\D/g, '')}`;
+      finalUrl = `https://wa.me/55${String(finalUrl || '').replace(/\D/g, '')}`;
     }
 
     if (finalUrl.includes('wa.me')) {
@@ -384,7 +388,7 @@ export default function ClientProfilePage() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={loading || form.phone.replace(/\D/g, '').length < 10} className="w-full md:w-auto">
+                <Button type="submit" disabled={loading || String(form.phone || '').replace(/\D/g, '').length < 10} className="w-full md:w-auto">
                   {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
               </form>
